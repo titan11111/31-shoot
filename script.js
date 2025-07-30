@@ -5,6 +5,11 @@ const scoreDisplay = document.getElementById('score');
 const healthDisplay = document.getElementById('health');
 const gameOverScreen = document.getElementById('game-over-screen');
 const restartButton = document.getElementById('restart-button');
+const btnUp = document.getElementById('btn-up');
+const btnDown = document.getElementById('btn-down');
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+const btnFire = document.getElementById('btn-fire');
 
 // ゲームの状態変数
 let gameRunning = true;
@@ -106,6 +111,25 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
     keys[e.code] = false;
 });
+
+// --- タッチ入力の管理 ---
+function bindTouch(btn, code) {
+    if (!btn) return;
+    btn.addEventListener('touchstart', (e) => {
+        keys[code] = true;
+        e.preventDefault();
+    });
+    btn.addEventListener('touchend', (e) => {
+        keys[code] = false;
+        e.preventDefault();
+    });
+}
+
+bindTouch(btnUp, 'ArrowUp');
+bindTouch(btnDown, 'ArrowDown');
+bindTouch(btnLeft, 'ArrowLeft');
+bindTouch(btnRight, 'ArrowRight');
+bindTouch(btnFire, 'Space');
 
 // --- ゲームのリセット ---
 function resetGame() {
