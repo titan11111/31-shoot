@@ -10,22 +10,21 @@ const restartButton = document.getElementById('restart-button');
 let gameRunning = true;
 let score = 0;
 
-// SVGをCanvasに描画するためのヘルパー関数
-function drawSVG(ctx, svgString, x, y, width, height, callback) {
+// SVG文字列からImageオブジェクトを生成してキャッシュする関数
+function createSVGImage(svgString) {
     const img = new Image();
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    img.src = URL.createObjectURL(svgBlob);
+    return img;
+}
 
-    img.onload = () => {
+// Imageオブジェクトを描画するヘルパー関数
+function renderImage(ctx, img, x, y, width, height) {
+    if (img.complete) {
         ctx.drawImage(img, x, y, width, height);
-        URL.revokeObjectURL(url); // メモリリーク防止
-        if (callback) callback();
-    };
-    img.onerror = (e) => {
-        console.error("SVG画像の読み込みエラー:", e);
-        URL.revokeObjectURL(url);
-    };
-    img.src = url;
+    } else {
+        img.onload = () => ctx.drawImage(img, x, y, width, height);
+    }
 }
 
 // --- プレイヤーの設定 ---
@@ -53,6 +52,7 @@ const player = {
         </svg>
     `
 };
+player.image = createSVGImage(player.svg);
 
 // --- 敵の設定 ---
 let enemies = [];
@@ -66,6 +66,7 @@ const enemySVG = `
         <circle cx="15" cy="30" r="5" fill="#FFD700"/>
     </svg>
 `;
+const enemyImage = createSVGImage(enemySVG);
 
 // --- パワーアップアイテムの設定 ---
 let powerUps = [];
@@ -91,6 +92,11 @@ const powerUpTypes = {
         svg: `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="15" cy="15" r="12" fill="#00FFFF"/><path d="M15 5C10 5 7 10 7 15C7 20 10 25 15 25C20 25 23 20 23 15C23 10 20 5 15 5Z" fill="#000" fill-opacity="0.2"/></svg>`
     }
 };
+
+// 各パワーアップの画像をあらかじめ生成
+for (const type of Object.values(powerUpTypes)) {
+    type.image = createSVGImage(type.svg);
+}
 
 // --- キーボード入力の管理 ---
 const keys = {};
@@ -187,7 +193,7 @@ function gameLoop() {
     }
 
     // プレイヤーの描画
-    drawSVG(ctx, player.svg, player.x, player.y, player.width, player.height);
+    renderImage(ctx, player.image, player.x, player.y, player.width, player.height);
 
     // 弾の更新と描画
     for (let i = player.bullets.length - 1; i >= 0; i--) {
@@ -222,7 +228,7 @@ function gameLoop() {
         enemy.x -= enemy.speed;
 
         // 敵の描画
-        drawSVG(ctx, enemySVG, enemy.x, enemy.y, enemy.width, enemy.height);
+        renderImage(ctx, enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
 
         // 画面外に出たら削除
         if (enemy.x + enemy.width < 0) {
@@ -283,7 +289,7 @@ function gameLoop() {
         powerUp.x -= powerUp.speed;
 
         // パワーアップの描画
-        drawSVG(ctx, powerUp.type.svg, powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+        renderImage(ctx, powerUp.type.image, powerUp.x, powerUp.y, powerUp.width, powerUp.height);
 
         // 画面外に出たら削除
         if (powerUp.x + powerUp.width < 0) {
