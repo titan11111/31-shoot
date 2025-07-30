@@ -15,11 +15,50 @@ const btnFire = document.getElementById('btn-fire');
 let gameRunning = true;
 let score = 0;
 
-// SVG文字列からImageオブジェクトを生成してキャッシュする関数
+// --- 背景用の星 ---
+const stars = [];
+function initStars() {
+    stars.length = 0;
+    for (let i = 0; i < 50; i++) {
+        stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.5 + 0.5
+        });
+    }
+}
+
+// --- 効果音再生 ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+}
+function playSE(type) {
+    if (type === 'fire') playSound(600);
+    else if (type === 'hit') playSound(250);
+    else if (type === 'enemy') playSound(400);
+}
+
+// SVG文字列をImageオブジェクトに変換し再利用するキャッシュ関数
+const svgCache = new Map();
 function createSVGImage(svgString) {
+    if (svgCache.has(svgString)) {
+        return svgCache.get(svgString);
+    }
     const img = new Image();
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    img.src = URL.createObjectURL(svgBlob);
+    const url = URL.createObjectURL(svgBlob);
+    img.onload = () => URL.revokeObjectURL(url);
+    img.src = url;
+    svgCache.set(svgString, img);
     return img;
 }
 
@@ -48,6 +87,7 @@ const player = {
     bulletDamage: 10,
     shieldActive: false,
     shieldDuration: 0,
+    flashTimer: 0,
     // プレイヤーのSVG画像
     svg: `
         <svg width="60" height="50" viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -71,7 +111,18 @@ const enemySVG = `
         <circle cx="15" cy="30" r="5" fill="#FFD700"/>
     </svg>
 `;
-const enemyImage = createSVGImage(enemySVG);
+const fastEnemySVG = `
+    <svg width="40" height="30" viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 15L40 0L30 15L40 30L0 15Z" fill="#00ff7f"/>
+        <circle cx="12" cy="7" r="4" fill="#FFD700"/>
+        <circle cx="12" cy="23" r="4" fill="#FFD700"/>
+    </svg>
+`;
+
+const enemyTypes = [
+    { width: 50, height: 40, speedMin: 1, speedMax: 3, health: 30, image: createSVGImage(enemySVG) },
+    { width: 40, height: 30, speedMin: 3, speedMax: 5, health: 20, image: createSVGImage(fastEnemySVG) }
+];
 
 // --- パワーアップアイテムの設定 ---
 let powerUps = [];
@@ -177,10 +228,18 @@ function gameLoop() {
     // キャンバスをクリア
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 背景のスクロール (ここでは簡略化)
-    // 実際のゲームでは、背景画像をスクロールさせるロジックを追加します。
-    ctx.fillStyle = '#1a1a1a'; // 暗い背景色
+    // 背景のスクロール演出
+    ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (const star of stars) {
+        star.x -= star.speed;
+        if (star.x < 0) {
+            star.x = canvas.width;
+            star.y = Math.random() * canvas.height;
+        }
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(star.x, star.y, star.size, star.size);
+    }
 
     // プレイヤーの移動
     if (keys['ArrowUp'] || keys['KeyW']) player.y = Math.max(0, player.y - player.speed);
@@ -199,6 +258,7 @@ function gameLoop() {
             damage: player.bulletDamage
         });
         player.fireCooldown = player.fireRate;
+        playSE('fire');
     }
     if (player.fireCooldown > 0) player.fireCooldown--;
 
@@ -218,6 +278,16 @@ function gameLoop() {
 
     // プレイヤーの描画
     renderImage(ctx, player.image, player.x, player.y, player.width, player.height);
+    if (player.flashTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = player.flashTimer / 10;
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath();
+        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, player.width, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        player.flashTimer--;
+    }
 
     // 弾の更新と描画
     for (let i = player.bullets.length - 1; i >= 0; i--) {
@@ -235,13 +305,15 @@ function gameLoop() {
     // 敵の生成
     enemySpawnTimer++;
     if (enemySpawnTimer >= enemySpawnInterval) {
+        const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
         enemies.push({
             x: canvas.width,
-            y: Math.random() * (canvas.height - 40),
-            width: 50,
-            height: 40,
-            speed: Math.random() * 2 + 1, // 1から3のランダムな速度
-            health: 30
+            y: Math.random() * (canvas.height - type.height),
+            width: type.width,
+            height: type.height,
+            speed: Math.random() * (type.speedMax - type.speedMin) + type.speedMin,
+            health: type.health,
+            image: type.image
         });
         enemySpawnTimer = 0;
     }
@@ -252,7 +324,7 @@ function gameLoop() {
         enemy.x -= enemy.speed;
 
         // 敵の描画
-        renderImage(ctx, enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
+        renderImage(ctx, enemy.image, enemy.x, enemy.y, enemy.width, enemy.height);
 
         // 画面外に出たら削除
         if (enemy.x + enemy.width < 0) {
@@ -280,11 +352,13 @@ function gameLoop() {
             if (checkCollision(bullet, enemy)) {
                 enemy.health -= bullet.damage;
                 player.bullets.splice(j, 1); // 衝突した弾は削除
+                playSE('hit');
 
                 if (enemy.health <= 0) {
                     enemies.splice(i, 1); // 敵を削除
                     score += 10; // スコア加算
                     updateGameInfo();
+                    playSE('enemy');
                     break; // 敵が破壊されたので、この敵に対する弾のチェックは終了
                 }
             }
@@ -325,6 +399,7 @@ function gameLoop() {
         if (checkCollision(player, powerUp)) {
             powerUp.type.effect(player); // 効果を適用
             powerUps.splice(i, 1); // 取得したパワーアップは削除
+            player.flashTimer = 10;
             updateGameInfo();
         }
     }
@@ -344,6 +419,7 @@ window.onload = function() {
     // キャンバスのサイズを初期化
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
+    initStars();
     // 初期化したサイズでゲームをリセット
     resetGame();
 };
@@ -352,6 +428,7 @@ window.onload = function() {
 window.addEventListener('resize', () => {
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
+    initStars();
     // プレイヤーの位置を再調整（画面中央に保つため）
     player.y = Math.min(canvas.height - player.height, Math.max(0, player.y));
     player.x = Math.min(canvas.width - player.width, Math.max(0, player.x));
