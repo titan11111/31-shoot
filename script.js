@@ -31,7 +31,8 @@ function drawSVG(ctx, svgString, x, y, width, height, callback) {
 // --- プレイヤーの設定 ---
 const player = {
     x: 50,
-    y: canvas.height / 2 - 25,
+    // 初期化時はキャンバスサイズが決まっていないため仮の値を設定
+    y: 0,
     width: 60,
     height: 50,
     speed: 5,
@@ -103,7 +104,8 @@ window.addEventListener('keyup', (e) => {
 // --- ゲームのリセット ---
 function resetGame() {
     player.x = 50;
-    player.y = canvas.height / 2 - 25;
+    // キャンバス中心にプレイヤーを配置
+    player.y = canvas.height / 2 - player.height / 2;
     player.health = 100;
     player.bullets = [];
     player.fireRate = 10;
@@ -312,8 +314,8 @@ window.onload = function() {
     // キャンバスのサイズを初期化
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
-    player.y = canvas.height / 2 - player.height / 2; // プレイヤーの初期Y位置を中央に調整
-    gameLoop();
+    // 初期化したサイズでゲームをリセット
+    resetGame();
 };
 
 // ウィンドウのリサイズ時にキャンバスサイズを調整
