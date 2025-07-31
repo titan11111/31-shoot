@@ -3,6 +3,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score');
 const healthDisplay = document.getElementById('health');
+const stageDisplay = document.getElementById('stage');
 const gameOverScreen = document.getElementById('game-over-screen');
 const restartButton = document.getElementById('restart-button');
 const btnUp = document.getElementById('btn-up');
@@ -14,6 +15,18 @@ const btnFire = document.getElementById('btn-fire');
 // ゲームの状態変数
 let gameRunning = true;
 let score = 0;
+let stage = 1;
+let stageTimer = 0;
+let boss = null;
+
+// ボス画像の読み込み
+const bossImage = new Image();
+bossImage.src = 'boss.svg';
+
+// ハート回復アイテム
+let hearts = [];
+const heartSVG = `<svg width="20" height="20" viewBox="0 0 32 29.6" xmlns="http://www.w3.org/2000/svg"><path d="M23.6 0c-2.9 0-5.6 1.2-7.6 3.1C13.9 1.2 11.2 0 8.4 0 3.8 0 0 3.8 0 8.4c0 9.5 16 21.2 16 21.2s16-11.7 16-21.2C32 3.8 28.2 0 23.6 0z" fill="#FF0000"/></svg>`;
+const heartImage = createSVGImage(heartSVG);
 
 // --- 背景用の星 ---
 const stars = [];
@@ -88,6 +101,8 @@ const player = {
     shieldActive: false,
     shieldDuration: 0,
     flashTimer: 0,
+    shotType: 'normal',
+    shotTimer: 0,
     // プレイヤーのSVG画像
     svg: `
         <svg width="60" height="50" viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -140,6 +155,18 @@ const powerUpTypes = {
         color: "#FF00FF",
         effect: (p) => { p.bulletDamage += 5; console.log("Power Shot!"); },
         svg: `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="15" cy="15" r="12" fill="#FF00FF"/><path d="M15 8V22M8 15H22" stroke="#000" stroke-width="2"/></svg>`
+    },
+    BLUE_BEAM: {
+        name: "Beam",
+        color: "#0000FF",
+        effect: (p) => { p.shotType = 'beam'; p.shotTimer = 300; console.log("Beam!"); },
+        svg: `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="15" cy="15" r="12" fill="#0000FF"/><rect x="13" y="5" width="4" height="20" fill="#FFFFFF"/></svg>`
+    },
+    YELLOW_SPREAD: {
+        name: "Spread",
+        color: "#FFFF00",
+        effect: (p) => { p.shotType = 'spread'; p.shotTimer = 300; console.log("Spread!"); },
+        svg: `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="15" cy="15" r="12" fill="#FFFF00"/><path d="M10 20L15 10L20 20" stroke="#000" stroke-width="2"/></svg>`
     },
     SHIELD: {
         name: "Shield",
@@ -195,12 +222,19 @@ function resetGame() {
     player.bulletDamage = 10;
     player.shieldActive = false;
     player.shieldDuration = 0;
+    player.flashTimer = 0;
+    player.shotType = 'normal';
+    player.shotTimer = 0;
 
     enemies = [];
     enemySpawnTimer = 0;
     powerUps = [];
     powerUpSpawnTimer = 0;
+    hearts = [];
     score = 0;
+    stage = 1;
+    stageTimer = 0;
+    boss = null;
     gameRunning = true;
     gameOverScreen.style.display = 'none';
     updateGameInfo();
@@ -211,6 +245,7 @@ function resetGame() {
 function updateGameInfo() {
     scoreDisplay.textContent = `スコア: ${score}`;
     healthDisplay.textContent = `体力: ${player.health}`;
+    stageDisplay.textContent = `ステージ: ${stage}`;
 }
 
 // --- 衝突判定関数 ---
@@ -219,6 +254,12 @@ function checkCollision(obj1, obj2) {
            obj1.x + obj1.width > obj2.x &&
            obj1.y < obj2.y + obj2.height &&
            obj1.y + obj1.height > obj2.y;
+}
+
+function spawnHeart(x, y) {
+    if (Math.random() < 0.05) {
+        hearts.push({ x, y, width: 20, height: 20, speed: 2 });
+    }
 }
 
 // --- ゲームループ ---
@@ -241,6 +282,20 @@ function gameLoop() {
         ctx.fillRect(star.x, star.y, star.size, star.size);
     }
 
+    // ステージタイマーとボス出現
+    stageTimer++;
+    if (!boss && stageTimer >= 10800) {
+        boss = {
+            x: canvas.width,
+            y: canvas.height / 2 - 75,
+            width: 150,
+            height: 150,
+            speed: 2,
+            health: 200,
+            image: bossImage
+        };
+    }
+
     // プレイヤーの移動
     if (keys['ArrowUp'] || keys['KeyW']) player.y = Math.max(0, player.y - player.speed);
     if (keys['ArrowDown'] || keys['KeyS']) player.y = Math.min(canvas.height - player.height, player.y + player.speed);
@@ -248,19 +303,62 @@ function gameLoop() {
     if (keys['ArrowRight'] || keys['KeyD']) player.x = Math.min(canvas.width - player.width, player.x + player.speed);
 
     // プレイヤーの弾の発射
-    if (keys['Space'] && player.fireCooldown <= 0) {
-        player.bullets.push({
-            x: player.x + player.width,
-            y: player.y + player.height / 2 - 2,
-            width: 10,
-            height: 4,
-            speed: player.bulletSpeed,
-            damage: player.bulletDamage
-        });
+    if (keys['Space'] && player.fireCooldown <= 0 && player.shotType !== 'beam') {
+        if (player.shotType === 'spread') {
+            player.bullets.push({
+                x: player.x + player.width,
+                y: player.y + player.height / 2 - 2,
+                width: 10,
+                height: 4,
+                vx: player.bulletSpeed,
+                vy: -player.bulletSpeed / 2,
+                damage: player.bulletDamage
+            });
+            player.bullets.push({
+                x: player.x + player.width,
+                y: player.y + player.height / 2 - 2,
+                width: 10,
+                height: 4,
+                vx: player.bulletSpeed,
+                vy: player.bulletSpeed / 2,
+                damage: player.bulletDamage
+            });
+        } else {
+            player.bullets.push({
+                x: player.x + player.width,
+                y: player.y + player.height / 2 - 2,
+                width: 10,
+                height: 4,
+                vx: player.bulletSpeed,
+                vy: 0,
+                damage: player.bulletDamage
+            });
+        }
         player.fireCooldown = player.fireRate;
         playSE('fire');
     }
     if (player.fireCooldown > 0) player.fireCooldown--;
+
+    // ショットタイプのタイマー
+    if (player.shotType !== 'normal') {
+        player.shotTimer--;
+        if (player.shotTimer <= 0) {
+            player.shotType = 'normal';
+        }
+    }
+
+    // ビームの描画
+    let beamHitbox = null;
+    if (player.shotType === 'beam') {
+        beamHitbox = {
+            x: player.x + player.width,
+            y: player.y + player.height / 2 - 5,
+            width: canvas.width - (player.x + player.width),
+            height: 10
+        };
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(beamHitbox.x, beamHitbox.y, beamHitbox.width, beamHitbox.height);
+    }
 
     // プレイヤーのシールド効果
     if (player.shieldActive) {
@@ -292,36 +390,57 @@ function gameLoop() {
     // 弾の更新と描画
     for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
-        bullet.x += bullet.speed;
+        bullet.x += bullet.vx;
+        bullet.y += bullet.vy;
         ctx.fillStyle = 'yellow';
         ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
 
         // 画面外に出たら削除
-        if (bullet.x > canvas.width) {
+        if (bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
             player.bullets.splice(i, 1);
         }
     }
 
     // 敵の生成
-    enemySpawnTimer++;
-    if (enemySpawnTimer >= enemySpawnInterval) {
-        const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-        enemies.push({
-            x: canvas.width,
-            y: Math.random() * (canvas.height - type.height),
-            width: type.width,
-            height: type.height,
-            speed: Math.random() * (type.speedMax - type.speedMin) + type.speedMin,
-            health: type.health,
-            image: type.image
-        });
-        enemySpawnTimer = 0;
+    if (!boss) {
+        enemySpawnTimer++;
+        if (enemySpawnTimer >= enemySpawnInterval) {
+            const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+            const r = Math.random();
+            let moveType = 'straight';
+            if (r > 0.66) moveType = 'zigzag';
+            else if (r > 0.33) moveType = 'sine';
+            enemies.push({
+                x: canvas.width,
+                y: Math.random() * (canvas.height - type.height),
+                width: type.width,
+                height: type.height,
+                speed: Math.random() * (type.speedMax - type.speedMin) + type.speedMin,
+                health: type.health,
+                image: type.image,
+                moveType,
+                angle: 0,
+                direction: 1
+            });
+            enemySpawnTimer = 0;
+        }
     }
 
     // 敵の更新と描画
     for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
-        enemy.x -= enemy.speed;
+
+        if (enemy.moveType === 'sine') {
+            enemy.x -= enemy.speed;
+            enemy.y += Math.sin(enemy.angle) * 2;
+            enemy.angle += 0.1;
+        } else if (enemy.moveType === 'zigzag') {
+            enemy.x -= enemy.speed;
+            enemy.y += enemy.direction * enemy.speed;
+            if (enemy.y <= 0 || enemy.y + enemy.height >= canvas.height) enemy.direction *= -1;
+        } else {
+            enemy.x -= enemy.speed;
+        }
 
         // 敵の描画
         renderImage(ctx, enemy.image, enemy.x, enemy.y, enemy.width, enemy.height);
@@ -346,6 +465,19 @@ function gameLoop() {
             continue;
         }
 
+        // ビームとの衝突判定
+        if (beamHitbox && checkCollision(beamHitbox, enemy)) {
+            enemy.health -= player.bulletDamage;
+            if (enemy.health <= 0) {
+                enemies.splice(i, 1);
+                score += 10;
+                updateGameInfo();
+                playSE('enemy');
+                spawnHeart(enemy.x, enemy.y);
+                continue;
+            }
+        }
+
         // 敵と弾の衝突判定
         for (let j = player.bullets.length - 1; j >= 0; j--) {
             const bullet = player.bullets[j];
@@ -359,9 +491,29 @@ function gameLoop() {
                     score += 10; // スコア加算
                     updateGameInfo();
                     playSE('enemy');
+                    spawnHeart(enemy.x, enemy.y);
                     break; // 敵が破壊されたので、この敵に対する弾のチェックは終了
                 }
             }
+        }
+    }
+
+    // ハートアイテムの更新と描画
+    for (let i = hearts.length - 1; i >= 0; i--) {
+        const heart = hearts[i];
+        heart.x -= heart.speed;
+        renderImage(ctx, heartImage, heart.x, heart.y, heart.width, heart.height);
+
+        if (heart.x + heart.width < 0) {
+            hearts.splice(i, 1);
+            continue;
+        }
+
+        if (checkCollision(player, heart)) {
+            player.health = Math.min(100, player.health + 10);
+            hearts.splice(i, 1);
+            player.flashTimer = 10;
+            updateGameInfo();
         }
     }
 
@@ -401,6 +553,41 @@ function gameLoop() {
             powerUps.splice(i, 1); // 取得したパワーアップは削除
             player.flashTimer = 10;
             updateGameInfo();
+        }
+    }
+
+    // ボスの更新と描画
+    if (boss) {
+        if (boss.x > canvas.width - boss.width - 50) {
+            boss.x -= boss.speed;
+        }
+        renderImage(ctx, boss.image, boss.x, boss.y, boss.width, boss.height);
+
+        if (checkCollision(player, boss)) {
+            if (!player.shieldActive) {
+                player.health -= 20;
+                updateGameInfo();
+            }
+        }
+
+        for (let j = player.bullets.length - 1; j >= 0; j--) {
+            const bullet = player.bullets[j];
+            if (checkCollision(bullet, boss)) {
+                boss.health -= bullet.damage;
+                player.bullets.splice(j, 1);
+                playSE('hit');
+            }
+        }
+
+        if (beamHitbox && checkCollision(beamHitbox, boss)) {
+            boss.health -= player.bulletDamage;
+        }
+
+        if (boss.health <= 0) {
+            spawnHeart(boss.x, boss.y);
+            boss = null;
+            stage++;
+            stageTimer = 0;
         }
     }
 
