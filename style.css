@@ -27,10 +27,20 @@ canvas {
     left: 50%;
     transform: translateX(-50%);
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    white-space: nowrap;
     gap: 20px;
     font-size: 1.5em;
     font-weight: bold;
     text-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+}
+
+@media (max-width: 600px) {
+    #game-info {
+        font-size: 1.2em;
+        gap: 10px;
+    }
 }
 
 #game-over-screen {
@@ -107,9 +117,25 @@ canvas {
     height: 60px;
     font-size: 1.5em;
     border-radius: 50%;
-    border: none;
-    background-color: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(0, 191, 255, 0.4);
+    background: radial-gradient(circle at 30% 30%, rgba(0, 191, 255, 0.8), rgba(0, 123, 255, 0.8));
+    box-shadow: 0 4px 10px rgba(0, 191, 255, 0.4);
     color: #fff;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+#mobile-controls .control-btn:active {
+    transform: scale(0.9);
+    box-shadow: 0 2px 5px rgba(0, 191, 255, 0.6);
+}
+
+#btn-fire {
+    width: 80px;
+    height: 80px;
+    font-size: 2em;
+    border: 2px solid rgba(255, 87, 34, 0.6);
+    background: radial-gradient(circle at 30% 30%, #ff7043, #ff1744);
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.7);
 }
 
 @media (max-width: 768px) {

@@ -605,15 +605,15 @@ function gameLoop() {
 // リスタートボタンのイベントリスナー
 restartButton.addEventListener('click', resetGame);
 
-// ウィンドウのロード時にゲームを開始
-window.onload = function() {
+// DOMの読み込み後にゲームを開始
+document.addEventListener('DOMContentLoaded', () => {
     // キャンバスのサイズを初期化
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     initStars();
     // 初期化したサイズでゲームをリセット
     resetGame();
-};
+});
 
 // ウィンドウのリサイズ時にキャンバスサイズを調整
 window.addEventListener('resize', () => {
