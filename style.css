@@ -75,18 +75,31 @@ canvas {
 #mobile-controls {
     position: absolute;
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    width: 100%;
     display: none;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    padding: 0 20px;
+    box-sizing: border-box;
     z-index: 200;
 }
 
-#mobile-controls .h-controls {
+#left-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+#left-controls .h-controls {
     display: flex;
     gap: 10px;
+}
+
+#right-controls {
+    display: flex;
+    align-items: center;
 }
 
 #mobile-controls .control-btn {
