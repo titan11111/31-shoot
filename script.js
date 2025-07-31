@@ -231,6 +231,10 @@ function resetGame() {
     powerUps = [];
     powerUpSpawnTimer = 0;
     hearts = [];
+    // 入力状態をリセットしてキー押下が残らないようにする
+    for (const key in keys) {
+        keys[key] = false;
+    }
     score = 0;
     stage = 1;
     stageTimer = 0;
