@@ -3,36 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>横スクロールシューティングゲーム</title>
+    <title>ビームシューターゲーム</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="gameCanvas" width="960" height="600"></canvas>
-    <div id="game-info">
-        <span id="score">スコア: 0</span>
-        <span id="health">体力: 100</span>
-        <span id="stage">ステージ: 1</span>
-    </div>
-
-    <div id="game-over-screen">
-        ゲームオーバー！
-        <button id="restart-button">リスタート</button>
-    </div>
-
-    <div id="mobile-controls">
-        <div id="left-controls">
-            <button id="btn-up" class="control-btn">&#8593;</button>
-            <div class="h-controls">
-                <button id="btn-left" class="control-btn">&#8592;</button>
-                <button id="btn-right" class="control-btn">&#8594;</button>
+    <div id="gameContainer">
+        <div id="gameTitle">🚀 ビームシューター 🚀</div>
+        <div id="gameInfo">
+            <span id="score">スコア: 0</span>
+            <span id="life">ライフ: ❤️❤️❤️</span>
+            <span id="power">パワー: 1</span>
+        </div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="gameControls">
+            <div id="touchControls">
+                <button id="leftBtn">←</button>
+                <button id="rightBtn">→</button>
+                <button id="upBtn">↑</button>
+                <button id="downBtn">↓</button>
+                <button id="shootBtn">🔫</button>
             </div>
-            <button id="btn-down" class="control-btn">&#8595;</button>
+            <div id="instructions">
+                <p>🎮 操作方法:</p>
+                <p>PC: 矢印キー移動、スペースキーで射撃</p>
+                <p>スマホ: ボタンタッチで操作</p>
+                <p>🔺をゲットしてパワーアップ！</p>
+                <p>最大パワーでビーム解放！</p>
+            </div>
         </div>
-        <div id="right-controls">
-            <button id="btn-fire" class="control-btn">&#x1F52B;</button>
+        <div id="gameOver" class="hidden">
+            <h2>ゲームオーバー</h2>
+            <p>最終スコア: <span id="finalScore">0</span></p>
+            <button id="restartBtn">もう一度プレイ</button>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
