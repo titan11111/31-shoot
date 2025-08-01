@@ -43,8 +43,18 @@ function initStars() {
 }
 
 // --- 効果音再生 ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// AudioContext がサポートされていない環境でもゲームが動作するように安全に初期化
+let audioCtx = null;
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+if (AudioContextClass) {
+    try {
+        audioCtx = new AudioContextClass();
+    } catch (e) {
+        audioCtx = null;
+    }
+}
 function playSound(freq) {
+    if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'square';
