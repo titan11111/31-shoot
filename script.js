@@ -616,14 +616,19 @@ function gameLoop() {
 restartButton.addEventListener('click', resetGame);
 
 // DOMの読み込み後にゲームを開始
-document.addEventListener('DOMContentLoaded', () => {
+function initGame() {
     // キャンバスのサイズを初期化
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     initStars();
     // 初期化したサイズでゲームをリセット
     resetGame();
-});
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGame);
+} else {
+    initGame();
+}
 
 // ウィンドウのリサイズ時にキャンバスサイズを調整
 window.addEventListener('resize', () => {
