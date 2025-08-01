@@ -56,18 +56,24 @@ body {
 }
 
 #touchControls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 400px;
+  margin: 0 auto 20px;
+}
+
+#moveControls {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   gap: 10px;
-  max-width: 200px;
-  margin: 0 auto 20px;
 }
 
 #touchControls button {
-  width: 60px;
-  height: 60px;
-  font-size: 1.5em;
+  width: 72px;
+  height: 72px;
+  font-size: 1.8em;
   font-weight: bold;
   border: none;
   border-radius: 10px;
@@ -91,10 +97,8 @@ body {
 #leftBtn { grid-column: 1; grid-row: 2; }
 #rightBtn { grid-column: 3; grid-row: 2; }
 #upBtn { grid-column: 2; grid-row: 1; }
-#downBtn { grid-column: 2; grid-row: 2; }
-#shootBtn { 
-  grid-column: 2; 
-  grid-row: 3; 
+#downBtn { grid-column: 2; grid-row: 3; }
+#shootBtn {
   background: linear-gradient(145deg, #f44336, #d32f2f);
 }
 
@@ -165,11 +169,11 @@ body {
       width: 100%;
       max-width: 350px;
   }
-  
+
   #touchControls button {
-      width: 50px;
-      height: 50px;
-      font-size: 1.2em;
+      width: 60px;
+      height: 60px;
+      font-size: 1.44em;
   }
   
   #instructions {
@@ -183,8 +187,8 @@ body {
   }
   
   #touchControls button {
-      width: 40px;
-      height: 40px;
-      font-size: 1em;
+      width: 48px;
+      height: 48px;
+      font-size: 1.2em;
   }
 }
