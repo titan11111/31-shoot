@@ -6,9 +6,12 @@ const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const lifeElement = document.getElementById('life');
 const powerElement = document.getElementById('power');
+const stageElement = document.getElementById('stage');
 const gameOverElement = document.getElementById('gameOver');
 const finalScoreElement = document.getElementById('finalScore');
 const restartBtn = document.getElementById('restartBtn');
+
+const STAGE_DURATION = 120 * 60; // 2 minutes at 60 FPS
 
 // ゲーム状態
 let gameState = {
@@ -16,7 +19,10 @@ let gameState = {
     score: 0,
     life: 3,
     power: 1,
-    frameCount: 0
+    frameCount: 0,
+    stage: 1,
+    stageFrame: 0,
+    bossActive: false
 };
 
 // プレイヤー
@@ -341,15 +347,18 @@ function shoot() {
 
 // 敵の生成
 function spawnEnemies() {
-    if (gameState.frameCount % 60 === 0) {
-        const x = Math.random() * (canvas.width - 50) + 25;
-        enemies.push(new Enemy(x, -25));
-    }
+    if (!gameState.bossActive) {
+        if (gameState.stageFrame % 60 === 0) {
+            const x = Math.random() * (canvas.width - 50) + 25;
+            enemies.push(new Enemy(x, -25));
+        }
 
-    // ボス生成（スコアが500の倍数のとき）
-    if (gameState.frameCount % 1800 === 0 && gameState.score > 0) {
-        const x = canvas.width / 2;
-        enemies.push(new Enemy(x, -50, 'boss'));
+        if (gameState.stageFrame >= STAGE_DURATION) {
+            enemies = [];
+            const x = canvas.width / 2;
+            enemies.push(new Enemy(x, -50, 'boss'));
+            gameState.bossActive = true;
+        }
     }
 }
 
@@ -368,13 +377,16 @@ function checkCollisions() {
                     if (enemy.hp <= 0) {
                         explosions.push(new Explosion(enemy.x, enemy.y));
                         gameState.score += enemy.type === 'boss' ? 100 : 10;
-                        
+
                         // アイテムドロップ
                         if (Math.random() < 0.3) {
                             items.push(new Item(enemy.x, enemy.y, 'power'));
                         }
-                        
+
                         enemies.splice(enemyIndex, 1);
+                        if (enemy.type === 'boss') {
+                            nextStage();
+                        }
                     }
                 }
             });
@@ -390,13 +402,16 @@ function checkCollisions() {
                 if (enemy.hp <= 0) {
                     explosions.push(new Explosion(enemy.x, enemy.y));
                     gameState.score += enemy.type === 'boss' ? 100 : 10;
-                    
+
                     // アイテムドロップ
                     if (Math.random() < 0.3) {
                         items.push(new Item(enemy.x, enemy.y, 'power'));
                     }
-                    
+
                     enemies.splice(enemyIndex, 1);
+                    if (enemy.type === 'boss') {
+                        nextStage();
+                    }
                 }
             }
         });
@@ -462,7 +477,10 @@ function restartGame() {
         score: 0,
         life: 3,
         power: 1,
-        frameCount: 0
+        frameCount: 0,
+        stage: 1,
+        stageFrame: 0,
+        bossActive: false
     };
     
     player = {
@@ -479,18 +497,25 @@ function restartGame() {
     enemies = [];
     items = [];
     explosions = [];
-    
+
     gameOverElement.classList.add('hidden');
+}
+
+function nextStage() {
+    gameState.stage++;
+    gameState.stageFrame = 0;
+    gameState.bossActive = false;
 }
 
 // UI更新
 function updateUI() {
     scoreElement.textContent = `スコア: ${gameState.score}`;
-    
+
     const hearts = '❤️'.repeat(gameState.life);
     lifeElement.textContent = `ライフ: ${hearts}`;
-    
+
     powerElement.textContent = `パワー: ${gameState.power}${gameState.power >= 4 ? ' (MAX)' : ''}`;
+    stageElement.textContent = `ステージ: ${gameState.stage}`;
 }
 
 // 描画
@@ -535,7 +560,10 @@ function draw() {
 function gameLoop() {
     if (gameState.playing) {
         gameState.frameCount++;
-        
+        if (!gameState.bossActive) {
+            gameState.stageFrame++;
+        }
+
         updatePlayer();
         spawnEnemies();
         
