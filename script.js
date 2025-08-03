@@ -11,7 +11,7 @@ const gameOverElement = document.getElementById('gameOver');
 const finalScoreElement = document.getElementById('finalScore');
 const restartBtn = document.getElementById('restartBtn');
 
-const STAGE_DURATION = 120 * 60; // 2 minutes at 60 FPS
+const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
 
 // ボス画像の読み込み
 const bossImg = new Image();
