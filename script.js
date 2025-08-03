@@ -13,6 +13,10 @@ const restartBtn = document.getElementById('restartBtn');
 
 const STAGE_DURATION = 120 * 60; // 2 minutes at 60 FPS
 
+// ボス画像の読み込み
+const bossImg = new Image();
+bossImg.src = 'boss.svg';
+
 // ゲーム状態
 let gameState = {
     playing: true,
@@ -178,8 +182,8 @@ class Enemy {
     constructor(x, y, type = 'normal') {
         this.x = x;
         this.y = y;
-        this.width = 25;
-        this.height = 25;
+        this.width = type === 'boss' ? 75 : 25;
+        this.height = type === 'boss' ? 75 : 25;
         this.speed = 2;
         this.type = type;
         this.hp = type === 'boss' ? 10 : 1;
@@ -209,19 +213,22 @@ class Enemy {
     draw() {
         if (this.type === 'boss') {
             // ボス敵
-            ctx.fillStyle = '#ff0066';
-            ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
-            
+            ctx.drawImage(bossImg, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+
             // HPバー
             ctx.fillStyle = '#ff0000';
-            ctx.fillRect(this.x - this.width/2, this.y - this.height/2 - 10, this.width, 4);
+            ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2 - 10, this.width, 4);
             ctx.fillStyle = '#00ff00';
-            ctx.fillRect(this.x - this.width/2, this.y - this.height/2 - 10, 
-                        this.width * (this.hp / this.maxHp), 4);
+            ctx.fillRect(
+                this.x - this.width / 2,
+                this.y - this.height / 2 - 10,
+                this.width * (this.hp / this.maxHp),
+                4
+            );
         } else {
             // 通常敵
             ctx.fillStyle = '#ff6666';
-            ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
+            ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
         }
     }
 }
@@ -554,6 +561,17 @@ function draw() {
 
     // 爆発描画
     explosions.forEach(explosion => explosion.draw());
+
+    // ボス登場までのカウントダウン表示
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'left';
+    if (!gameState.bossActive) {
+        const remaining = Math.max(0, Math.ceil((STAGE_DURATION - gameState.stageFrame) / 60));
+        ctx.fillText(`ボス登場まで: ${remaining}秒`, 10, 20);
+    } else {
+        ctx.fillText('ボス登場！', 10, 20);
+    }
 }
 
 // メインゲームループ
