@@ -131,6 +131,10 @@ document.getElementById('downBtn').addEventListener('touchend', (e) => {
 document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
     e.preventDefault();
     touchButtons.shoot = true;
+    if (player.shootCooldown <= 0) {
+        shoot();
+        player.shootCooldown = gameState.power === 4 ? 20 : 10;
+    }
 });
 document.getElementById('shootBtn').addEventListener('touchend', (e) => {
     e.preventDefault();
@@ -146,8 +150,18 @@ document.getElementById('upBtn').addEventListener('mousedown', () => touchButton
 document.getElementById('upBtn').addEventListener('mouseup', () => touchButtons.up = false);
 document.getElementById('downBtn').addEventListener('mousedown', () => touchButtons.down = true);
 document.getElementById('downBtn').addEventListener('mouseup', () => touchButtons.down = false);
-document.getElementById('shootBtn').addEventListener('mousedown', () => touchButtons.shoot = true);
-document.getElementById('shootBtn').addEventListener('mouseup', () => touchButtons.shoot = false);
+document.getElementById('shootBtn').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    touchButtons.shoot = true;
+    if (player.shootCooldown <= 0) {
+        shoot();
+        player.shootCooldown = gameState.power === 4 ? 20 : 10;
+    }
+});
+document.getElementById('shootBtn').addEventListener('mouseup', (e) => {
+    e.preventDefault();
+    touchButtons.shoot = false;
+});
 
 // リスタートボタン
 restartBtn.addEventListener('click', restartGame);
