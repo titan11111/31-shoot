@@ -8,6 +8,7 @@ const lifeElement = document.getElementById('life');
 const powerElement = document.getElementById('power');
 const shieldElement = document.getElementById('shield');
 const stageElement = document.getElementById('stage');
+const gameContainer = document.getElementById('gameContainer');
 const gameOverElement = document.getElementById('gameOver');
 const finalScoreElement = document.getElementById('finalScore');
 const restartBtn = document.getElementById('restartBtn');
@@ -738,3 +739,19 @@ function gameLoop() {
 // ゲーム開始
 gameLoop();
 bgm.play().catch(() => {});
+
+// 画面サイズに合わせてゲーム全体をスケーリング
+function resizeGame() {
+    gameContainer.style.transform = 'none';
+    const rect = gameContainer.getBoundingClientRect();
+    const scale = Math.min(
+        window.innerWidth / rect.width,
+        window.innerHeight / rect.height,
+        1
+    );
+    gameContainer.style.transform = `scale(${scale})`;
+}
+
+window.addEventListener('resize', resizeGame);
+window.addEventListener('orientationchange', resizeGame);
+resizeGame();
