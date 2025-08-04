@@ -6,6 +6,7 @@ const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const lifeElement = document.getElementById('life');
 const powerElement = document.getElementById('power');
+const shieldElement = document.getElementById('shield');
 const stageElement = document.getElementById('stage');
 const gameOverElement = document.getElementById('gameOver');
 const finalScoreElement = document.getElementById('finalScore');
@@ -36,7 +37,8 @@ let player = {
     width: 30,
     height: 30,
     speed: 5,
-    shootCooldown: 0
+    shootCooldown: 0,
+    shield: 0
 };
 
 // 配列の初期化
@@ -249,14 +251,21 @@ class Item {
     }
 
     draw() {
-        ctx.fillStyle = '#00ff00';
+        if (this.type === 'power') {
+            ctx.fillStyle = '#00ff00';
+        } else if (this.type === 'shield') {
+            ctx.fillStyle = '#00aaff';
+        } else {
+            ctx.fillStyle = '#00ff00';
+        }
         ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
-        
+
         // アイテムマーク
         ctx.fillStyle = '#ffffff';
         ctx.font = '12px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🔺', this.x, this.y + 4);
+        const symbol = this.type === 'shield' ? '🛡️' : '🔺';
+        ctx.fillText(symbol, this.x, this.y + 4);
     }
 }
 
@@ -386,8 +395,11 @@ function checkCollisions() {
                         gameState.score += enemy.type === 'boss' ? 100 : 10;
 
                         // アイテムドロップ
-                        if (Math.random() < 0.3) {
+                        const rand = Math.random();
+                        if (rand < 0.3) {
                             items.push(new Item(enemy.x, enemy.y, 'power'));
+                        } else if (rand < 0.4) {
+                            items.push(new Item(enemy.x, enemy.y, 'shield'));
                         }
 
                         enemies.splice(enemyIndex, 1);
@@ -411,8 +423,11 @@ function checkCollisions() {
                     gameState.score += enemy.type === 'boss' ? 100 : 10;
 
                     // アイテムドロップ
-                    if (Math.random() < 0.3) {
+                    const rand = Math.random();
+                    if (rand < 0.3) {
                         items.push(new Item(enemy.x, enemy.y, 'power'));
+                    } else if (rand < 0.4) {
+                        items.push(new Item(enemy.x, enemy.y, 'shield'));
                     }
 
                     enemies.splice(enemyIndex, 1);
@@ -431,11 +446,16 @@ function checkCollisions() {
                 Math.abs(bullet.y - player.y) < player.height/2 + bullet.height/2) {
                 
                 bullets.splice(bulletIndex, 1);
-                gameState.life--;
-                explosions.push(new Explosion(player.x, player.y));
-                
-                if (gameState.life <= 0) {
-                    gameOver();
+                if (player.shield > 0) {
+                    player.shield--;
+                    explosions.push(new Explosion(player.x, player.y));
+                } else {
+                    gameState.life--;
+                    explosions.push(new Explosion(player.x, player.y));
+
+                    if (gameState.life <= 0) {
+                        gameOver();
+                    }
                 }
             }
         }
@@ -445,14 +465,21 @@ function checkCollisions() {
     enemies.forEach((enemy, enemyIndex) => {
         if (Math.abs(enemy.x - player.x) < enemy.width/2 + player.width/2 &&
             Math.abs(enemy.y - player.y) < enemy.height/2 + player.height/2) {
-            
-            gameState.life--;
-            explosions.push(new Explosion(player.x, player.y));
-            explosions.push(new Explosion(enemy.x, enemy.y));
-            enemies.splice(enemyIndex, 1);
-            
-            if (gameState.life <= 0) {
-                gameOver();
+
+            if (player.shield > 0) {
+                player.shield--;
+                explosions.push(new Explosion(player.x, player.y));
+                explosions.push(new Explosion(enemy.x, enemy.y));
+                enemies.splice(enemyIndex, 1);
+            } else {
+                gameState.life--;
+                explosions.push(new Explosion(player.x, player.y));
+                explosions.push(new Explosion(enemy.x, enemy.y));
+                enemies.splice(enemyIndex, 1);
+
+                if (gameState.life <= 0) {
+                    gameOver();
+                }
             }
         }
     });
@@ -464,6 +491,8 @@ function checkCollisions() {
             
             if (item.type === 'power' && gameState.power < 4) {
                 gameState.power++;
+            } else if (item.type === 'shield') {
+                player.shield = 3;
             }
             items.splice(itemIndex, 1);
         }
@@ -496,7 +525,8 @@ function restartGame() {
         width: 30,
         height: 30,
         speed: 5,
-        shootCooldown: 0
+        shootCooldown: 0,
+        shield: 0
     };
     
     bullets = [];
@@ -522,6 +552,7 @@ function updateUI() {
     lifeElement.textContent = `ライフ: ${hearts}`;
 
     powerElement.textContent = `パワー: ${gameState.power}${gameState.power >= 4 ? ' (MAX)' : ''}`;
+    shieldElement.textContent = `バリア: ${player.shield}`;
     stageElement.textContent = `ステージ: ${gameState.stage}`;
 }
 
@@ -542,7 +573,15 @@ function draw() {
     // プレイヤー描画
     ctx.fillStyle = '#00aaff';
     ctx.fillRect(player.x - player.width/2, player.y - player.height/2, player.width, player.height);
-    
+
+    if (player.shield > 0) {
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.width, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
     // 機体の詳細
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(player.x - 2, player.y - player.height/2, 4, 10);
