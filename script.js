@@ -63,7 +63,14 @@ let player = {
     height: 36,
     speed: 5,
     shootCooldown: 0,
-    shield: 0
+    shotDelay: 10,
+    shield: 0,
+    isWide: false,
+    isHoming: false,
+    bombCount: 0,
+    hasSatellite: false,
+    isPenetrate: false,
+    isMagnet: false
 };
 
 // 配列の初期化
@@ -72,6 +79,7 @@ let beams = [];
 let enemies = [];
 let items = [];
 let explosions = [];
+let satellites = [];
 
 // キー入力管理
 let keys = {};
@@ -86,6 +94,9 @@ let touchButtons = {
 // イベントリスナー設定
 document.addEventListener('keydown', (e) => {
     keys[e.code] = true;
+    if (e.code === 'KeyB') {
+        useBomb();
+    }
 });
 
 document.addEventListener('keyup', (e) => {
@@ -134,7 +145,7 @@ document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
     touchButtons.shoot = true;
     if (player.shootCooldown <= 0) {
         shoot();
-        player.shootCooldown = gameState.power === 4 ? 20 : 10;
+        player.shootCooldown = player.shotDelay;
     }
 });
 document.getElementById('shootBtn').addEventListener('touchend', (e) => {
@@ -156,7 +167,7 @@ document.getElementById('shootBtn').addEventListener('mousedown', (e) => {
     touchButtons.shoot = true;
     if (player.shootCooldown <= 0) {
         shoot();
-        player.shootCooldown = gameState.power === 4 ? 20 : 10;
+        player.shootCooldown = player.shotDelay;
     }
 });
 document.getElementById('shootBtn').addEventListener('mouseup', (e) => {
@@ -169,7 +180,7 @@ restartBtn.addEventListener('click', restartGame);
 
 // 弾丸クラス
 class Bullet {
-    constructor(x, y, dx, dy, color = '#ffff00') {
+    constructor(x, y, dx, dy, color = '#ffff00', homing = false, penetrate = false) {
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -177,9 +188,28 @@ class Bullet {
         this.width = 4;
         this.height = 8;
         this.color = color;
+        this.homing = homing;
+        this.penetrate = penetrate;
     }
 
     update() {
+        if (this.homing && enemies.length > 0) {
+            let target = null;
+            let minDist = Infinity;
+            enemies.forEach(enemy => {
+                const dist = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    target = enemy;
+                }
+            });
+            if (target) {
+                const angle = Math.atan2(target.y - this.y, target.x - this.x);
+                const speed = Math.hypot(this.dx, this.dy);
+                this.dx = Math.cos(angle) * speed;
+                this.dy = Math.sin(angle) * speed;
+            }
+        }
         this.x += this.dx;
         this.y += this.dy;
     }
@@ -361,36 +391,103 @@ class Enemy {
 }
 
 // アイテムクラス
-class Item {
-    constructor(x, y, type) {
+class PowerUp {
+    constructor(type, x, y) {
+        this.type = type;
         this.x = x;
         this.y = y;
-        this.width = 20;
-        this.height = 20;
-        this.type = type;
-        this.speed = 2;
+        this.radius = 12;
+        this.active = true;
     }
 
     update() {
-        this.y += this.speed;
+        this.y += 2;
+        if (player.isMagnet) {
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 100) {
+                this.x += dx * 0.05;
+                this.y += dy * 0.05;
+            }
+        }
+        if (this.checkCollision(player)) {
+            this.applyEffect();
+            this.active = false;
+        }
     }
 
-    draw() {
-        if (this.type === 'power') {
-            ctx.fillStyle = '#00ff00';
-        } else if (this.type === 'shield') {
-            ctx.fillStyle = '#00ddff';
-        } else {
-            ctx.fillStyle = '#00ff00';
+    applyEffect() {
+        switch (this.type) {
+            case 'shotLevelUp':
+                gameState.power = Math.min(gameState.power + 1, 3);
+                break;
+            case 'wide':
+                player.isWide = true;
+                setTimeout(() => player.isWide = false, 15000);
+                break;
+            case 'homing':
+                player.isHoming = true;
+                setTimeout(() => player.isHoming = false, 10000);
+                break;
+            case 'speed':
+                player.speed += 2;
+                setTimeout(() => player.speed -= 2, 10000);
+                break;
+            case 'barrier':
+                player.shield = 1;
+                break;
+            case 'bomb':
+                player.bombCount = Math.min(player.bombCount + 1, 5);
+                break;
+            case 'satellite':
+                player.hasSatellite = true;
+                if (satellites.length === 0) {
+                    satellites.push({ angle: 0, shootCooldown: 0 }, { angle: Math.PI, shootCooldown: 0 });
+                }
+                setTimeout(() => { player.hasSatellite = false; satellites = []; }, 20000);
+                break;
+            case 'rapid':
+                player.shotDelay = 5;
+                setTimeout(() => player.shotDelay = 10, 10000);
+                break;
+            case 'penetrate':
+                player.isPenetrate = true;
+                setTimeout(() => player.isPenetrate = false, 10000);
+                break;
+            case 'magnet':
+                player.isMagnet = true;
+                setTimeout(() => player.isMagnet = false, 15000);
+                break;
         }
-        ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
+    }
 
-        // アイテムマーク
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        const symbol = this.type === 'shield' ? '🛡️' : '🔺';
-        ctx.fillText(symbol, this.x, this.y + 4);
+    checkCollision(p) {
+        const dx = this.x - p.x;
+        const dy = this.y - p.y;
+        return Math.hypot(dx, dy) < this.radius + p.width / 2;
+    }
+
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.getColor();
+        ctx.fill();
+    }
+
+    getColor() {
+        return {
+            'shotLevelUp': 'red',
+            'wide': 'orange',
+            'homing': 'purple',
+            'speed': 'green',
+            'barrier': 'blue',
+            'bomb': 'black',
+            'satellite': 'silver',
+            'rapid': 'yellow',
+            'penetrate': 'magenta',
+            'magnet': 'aqua',
+        }[this.type] || 'white';
     }
 }
 
@@ -458,32 +555,37 @@ function updatePlayer() {
 
     if ((keys['Space'] || touchButtons.shoot) && player.shootCooldown <= 0) {
         shoot();
-        player.shootCooldown = gameState.power === 4 ? 20 : 10; // ビーム時は発射間隔が長い
+        player.shootCooldown = player.shotDelay;
     }
 }
 
 // 射撃システム
 function shoot() {
     const power = gameState.power;
-    
-    if (power === 1) {
-        // 1方向ショット
-        bullets.push(new Bullet(player.x, player.y - player.height/2, 0, -8));
-    } else if (power === 2) {
-        // 2連ショット
-        bullets.push(new Bullet(player.x - 8, player.y - player.height/2, 0, -8));
-        bullets.push(new Bullet(player.x + 8, player.y - player.height/2, 0, -8));
-    } else if (power === 3) {
-        // 3方向ショット
-        bullets.push(new Bullet(player.x, player.y - player.height/2, 0, -8));
-        bullets.push(new Bullet(player.x - 10, player.y - player.height/2, -2, -8));
-        bullets.push(new Bullet(player.x + 10, player.y - player.height/2, 2, -8));
-    } else if (power >= 4) {
-        // 最終形態：ビーム + 左右ショット
-        beams.push(new Beam(player.x, player.y));
-        bullets.push(new Bullet(player.x - 15, player.y - player.height/2, -1, -8));
-        bullets.push(new Bullet(player.x + 15, player.y - player.height/2, 1, -8));
+
+    if (player.isWide) {
+        bullets.push(new Bullet(player.x, player.y - player.height/2, -3, -8, '#ffff00', player.isHoming, player.isPenetrate));
+        bullets.push(new Bullet(player.x, player.y - player.height/2, 0, -8, '#ffff00', player.isHoming, player.isPenetrate));
+        bullets.push(new Bullet(player.x, player.y - player.height/2, 3, -8, '#ffff00', player.isHoming, player.isPenetrate));
+        return;
     }
+
+    if (power === 1) {
+        bullets.push(new Bullet(player.x, player.y - player.height/2, 0, -8, '#ffff00', player.isHoming, player.isPenetrate));
+    } else if (power === 2) {
+        bullets.push(new Bullet(player.x - 8, player.y - player.height/2, 0, -8, '#ffff00', player.isHoming, player.isPenetrate));
+        bullets.push(new Bullet(player.x + 8, player.y - player.height/2, 0, -8, '#ffff00', player.isHoming, player.isPenetrate));
+    } else if (power === 3) {
+        bullets.push(new Bullet(player.x, player.y - player.height/2, 0, -8, '#ffff00', player.isHoming, player.isPenetrate));
+        bullets.push(new Bullet(player.x - 10, player.y - player.height/2, -2, -8, '#ffff00', player.isHoming, player.isPenetrate));
+        bullets.push(new Bullet(player.x + 10, player.y - player.height/2, 2, -8, '#ffff00', player.isHoming, player.isPenetrate));
+    }
+}
+
+function spawnPowerUp(x, y) {
+    const types = ['shotLevelUp', 'wide', 'homing', 'speed', 'barrier', 'bomb', 'satellite', 'rapid', 'penetrate', 'magnet'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    items.push(new PowerUp(type, x, y));
 }
 
 // 敵の生成
@@ -521,20 +623,18 @@ function checkCollisions() {
             enemies.forEach((enemy, enemyIndex) => {
                 if (Math.abs(bullet.x - enemy.x) < enemy.width/2 + bullet.width/2 &&
                     Math.abs(bullet.y - enemy.y) < enemy.height/2 + bullet.height/2) {
-                    
+
                     enemy.hp--;
-                    bullets.splice(bulletIndex, 1);
+                    if (!bullet.penetrate) {
+                        bullets.splice(bulletIndex, 1);
+                    }
                     
                     if (enemy.hp <= 0) {
                         explosions.push(new Explosion(enemy.x, enemy.y));
                         gameState.score += enemy.type === 'boss' ? 100 : 10;
 
-                        // アイテムドロップ
-                        const rand = Math.random();
-                        if (rand < 0.3) {
-                            items.push(new Item(enemy.x, enemy.y, 'power'));
-                        } else if (rand < 0.4) {
-                            items.push(new Item(enemy.x, enemy.y, 'shield'));
+                        if (Math.random() < 0.3) {
+                            spawnPowerUp(enemy.x, enemy.y);
                         }
 
                         enemies.splice(enemyIndex, 1);
@@ -557,12 +657,8 @@ function checkCollisions() {
                     explosions.push(new Explosion(enemy.x, enemy.y));
                     gameState.score += enemy.type === 'boss' ? 100 : 10;
 
-                    // アイテムドロップ
-                    const rand = Math.random();
-                    if (rand < 0.3) {
-                        items.push(new Item(enemy.x, enemy.y, 'power'));
-                    } else if (rand < 0.4) {
-                        items.push(new Item(enemy.x, enemy.y, 'shield'));
+                    if (Math.random() < 0.3) {
+                        spawnPowerUp(enemy.x, enemy.y);
                     }
 
                     enemies.splice(enemyIndex, 1);
@@ -619,19 +715,15 @@ function checkCollisions() {
         }
     });
 
-    // アイテムとプレイヤーの当たり判定
-    items.forEach((item, itemIndex) => {
-        if (Math.abs(item.x - player.x) < item.width/2 + player.width/2 &&
-            Math.abs(item.y - player.y) < item.height/2 + player.height/2) {
-            
-            if (item.type === 'power' && gameState.power < 4) {
-                gameState.power++;
-            } else if (item.type === 'shield') {
-                player.shield = 3;
-            }
-            items.splice(itemIndex, 1);
-        }
-    });
+}
+
+function useBomb() {
+    if (player.bombCount > 0) {
+        player.bombCount--;
+        enemies.forEach(enemy => explosions.push(new Explosion(enemy.x, enemy.y)));
+        enemies = [];
+        bullets = bullets.filter(b => b.dy < 0);
+    }
 }
 
 // ゲームオーバー
@@ -657,19 +749,27 @@ function restartGame() {
     };
     
     player = {
-        x: canvas.width / 2 - 15,
+        x: canvas.width / 2 - 18,
         y: canvas.height - 80,
-        width: 30,
-        height: 30,
+        width: 36,
+        height: 36,
         speed: 5,
         shootCooldown: 0,
-        shield: 0
+        shotDelay: 10,
+        shield: 0,
+        isWide: false,
+        isHoming: false,
+        bombCount: 0,
+        hasSatellite: false,
+        isPenetrate: false,
+        isMagnet: false
     };
-    
+
     bullets = [];
     beams = [];
     enemies = [];
     items = [];
+    satellites = [];
     explosions = [];
     gameOverElement.classList.add('hidden');
     bossBgm.pause();
@@ -695,7 +795,7 @@ function updateUI() {
     const hearts = '❤️'.repeat(gameState.life);
     lifeElement.textContent = `ライフ: ${hearts}`;
 
-    powerElement.textContent = `パワー: ${gameState.power}${gameState.power >= 4 ? ' (MAX)' : ''}`;
+    powerElement.textContent = `パワー: ${gameState.power}${gameState.power >= 3 ? ' (MAX)' : ''}`;
     shieldElement.textContent = `バリア: ${player.shield}`;
     stageElement.textContent = `ステージ: ${gameState.stage}`;
 }
@@ -730,6 +830,14 @@ function draw() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(player.x - 2, player.y - player.height/2, 4, 10);
 
+    // サテライト描画
+    satellites.forEach(sat => {
+        ctx.fillStyle = '#cccccc';
+        ctx.beginPath();
+        ctx.arc(sat.x, sat.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
     // 弾丸描画
     bullets.forEach(bullet => bullet.draw());
     
@@ -740,7 +848,7 @@ function draw() {
     enemies.forEach(enemy => enemy.draw());
 
     // アイテム描画
-    items.forEach(item => item.draw());
+    items.forEach(item => item.draw(ctx));
 
     // 爆発描画
     explosions.forEach(explosion => explosion.draw());
@@ -785,7 +893,19 @@ function gameLoop() {
 
         // アイテム更新
         items.forEach(item => item.update());
-        items = items.filter(item => item.y < canvas.height + 50);
+        items = items.filter(item => item.active && item.y < canvas.height + 50);
+
+        // サテライト更新
+        satellites.forEach(sat => {
+            sat.angle += 0.05;
+            sat.x = player.x + Math.cos(sat.angle) * 40;
+            sat.y = player.y + Math.sin(sat.angle) * 40;
+            sat.shootCooldown--;
+            if (sat.shootCooldown <= 0) {
+                bullets.push(new Bullet(sat.x, sat.y, 0, -8, '#ffff00', player.isHoming, player.isPenetrate));
+                sat.shootCooldown = player.shotDelay;
+            }
+        });
 
         // 爆発更新
         explosions.forEach(explosion => explosion.update());
