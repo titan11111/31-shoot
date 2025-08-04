@@ -109,17 +109,6 @@ body {
   font-size: calc(1.8em * 1.2);
 }
 
-#instructions {
-  background: rgba(255,255,255,0.1);
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 15px;
-}
-
-#instructions p {
-  margin: 5px 0;
-  font-size: 0.9em;
-}
 
 #gameOver {
   position: absolute;
@@ -189,9 +178,6 @@ body {
       font-size: calc(1.44em * 1.2);
   }
   
-  #instructions {
-      font-size: 0.8em;
-  }
 }
 
 @media (max-width: 400px) {
