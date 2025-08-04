@@ -24,6 +24,18 @@ const bossBgm = new Audio('audio/Assault_of_enemy.mp3');
 bgm.loop = true;
 bossBgm.loop = true;
 
+// ユーザー操作後にBGMを開始
+let audioInitialized = false;
+function initAudio() {
+    if (!audioInitialized) {
+        bgm.play().catch(() => {});
+        audioInitialized = true;
+    }
+}
+document.addEventListener('keydown', initAudio, { once: true });
+document.addEventListener('touchstart', initAudio, { once: true });
+document.addEventListener('mousedown', initAudio, { once: true });
+
 // ゲーム状態
 let gameState = {
     playing: true,
