@@ -18,6 +18,7 @@ const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
 // ボス画像の読み込み
 const bossImg = new Image();
 bossImg.src = 'boss.svg';
+bossImg.onload = () => { bossImg.loaded = true; };
 
 // BGM
 const bgm = new Audio('audio/Dreaming_Stargazer.mp3');
@@ -56,10 +57,10 @@ let gameState = {
 
 // プレイヤー
 let player = {
-    x: canvas.width / 2 - 15,
+    x: canvas.width / 2 - 18,
     y: canvas.height - 80,
-    width: 30,
-    height: 30,
+    width: 36,
+    height: 36,
     speed: 5,
     shootCooldown: 0,
     shield: 0
@@ -219,13 +220,13 @@ class Beam {
 
 // 敵クラス
 class Enemy {
-    constructor(x, y, type = 'normal') {
+    constructor(x, y, type = 'normal', movement = 'straight') {
         this.x = x;
         this.y = y;
         this.type = type;
         if (type === 'boss') {
-            this.width = 225;
-            this.height = 225;
+            this.width = 270;
+            this.height = 270;
             const stage = gameState.stage;
             const hpTable = {1: 8, 2: 12, 3: 15};
             this.hp = hpTable[stage] || (8 + (stage - 1) * 3 + (stage > 1 ? 1 : 0));
@@ -238,12 +239,28 @@ class Enemy {
             this.attackPattern = Math.floor(Math.random() * 3);
             this.dx = this.speed; // for bouncing pattern
         } else {
-            this.width = 25;
-            this.height = 25;
+            this.width = 30;
+            this.height = 30;
             this.speed = 2;
             this.hp = 1;
             this.maxHp = this.hp;
             this.shootCooldown = 0;
+            this.movement = movement;
+            this.direction = Math.random() < 0.5 ? -1 : 1;
+            this.color = this.getColor();
+        }
+    }
+
+    getColor() {
+        switch (this.movement) {
+            case 'zigzag':
+                return '#ffa500';
+            case 'chase':
+                return '#66ff66';
+            case 'fromBottom':
+                return '#ff66ff';
+            default:
+                return '#ff6666';
         }
     }
 
@@ -278,7 +295,22 @@ class Enemy {
                 this.shootCooldown = this.shootInterval;
             }
         } else {
-            this.y += this.speed;
+            switch (this.movement) {
+                case 'zigzag':
+                    this.y += this.speed;
+                    this.x += Math.sin(gameState.frameCount * 0.1) * 2 * this.direction;
+                    break;
+                case 'chase':
+                    const angle = Math.atan2(player.y - this.y, player.x - this.x);
+                    this.x += Math.cos(angle) * this.speed;
+                    this.y += Math.sin(angle) * this.speed;
+                    break;
+                case 'fromBottom':
+                    this.y -= this.speed;
+                    break;
+                default:
+                    this.y += this.speed;
+            }
         }
     }
 
@@ -303,7 +335,12 @@ class Enemy {
     draw() {
         if (this.type === 'boss') {
             // ボス敵
-            ctx.drawImage(bossImg, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            if (bossImg.loaded) {
+                ctx.drawImage(bossImg, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            } else {
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            }
 
             // HPバー
             ctx.fillStyle = '#ff0000';
@@ -317,7 +354,7 @@ class Enemy {
             );
         } else {
             // 通常敵
-            ctx.fillStyle = '#ff6666';
+            ctx.fillStyle = this.color;
             ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
         }
     }
@@ -342,7 +379,7 @@ class Item {
         if (this.type === 'power') {
             ctx.fillStyle = '#00ff00';
         } else if (this.type === 'shield') {
-            ctx.fillStyle = '#00aaff';
+            ctx.fillStyle = '#00ddff';
         } else {
             ctx.fillStyle = '#00ff00';
         }
@@ -452,15 +489,22 @@ function shoot() {
 // 敵の生成
 function spawnEnemies() {
     if (!gameState.bossActive) {
-        if (gameState.stageFrame % 60 === 0) {
-            const x = Math.random() * (canvas.width - 50) + 25;
-            enemies.push(new Enemy(x, -25));
+        if (gameState.stageFrame % 45 === 0) {
+            const x = Math.random() * (canvas.width - 60) + 30;
+            const patterns = ['straight', 'zigzag', 'chase'];
+            const movement = patterns[Math.floor(Math.random() * patterns.length)];
+            enemies.push(new Enemy(x, -30, 'normal', movement));
+        }
+
+        if (gameState.stageFrame % 120 === 0) {
+            const x = Math.random() * (canvas.width - 60) + 30;
+            enemies.push(new Enemy(x, canvas.height + 30, 'normal', 'fromBottom'));
         }
 
         if (gameState.stageFrame >= STAGE_DURATION) {
             enemies = [];
             const x = canvas.width / 2;
-            enemies.push(new Enemy(x, -150, 'boss'));
+            enemies.push(new Enemy(x, -200, 'boss'));
             gameState.bossActive = true;
             bgm.pause();
             bossBgm.currentTime = 0;
@@ -671,7 +715,7 @@ function draw() {
     }
 
     // プレイヤー描画
-    ctx.fillStyle = '#00aaff';
+    ctx.fillStyle = '#00ffcc';
     ctx.fillRect(player.x - player.width/2, player.y - player.height/2, player.width, player.height);
 
     if (player.shield > 0) {
@@ -737,7 +781,7 @@ function gameLoop() {
 
         // 敵更新
         enemies.forEach(enemy => enemy.update());
-        enemies = enemies.filter(enemy => enemy.y < canvas.height + 50);
+        enemies = enemies.filter(enemy => enemy.y < canvas.height + 50 && enemy.y > -50);
 
         // アイテム更新
         items.forEach(item => item.update());
