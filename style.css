@@ -12,16 +12,17 @@ body {
   color: white;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   min-height: 100vh;
   padding: 10px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 #gameContainer {
   text-align: center;
   max-width: 500px;
   width: 100%;
+  transform-origin: top center;
 }
 
 #gameTitle {
