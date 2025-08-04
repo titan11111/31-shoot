@@ -18,6 +18,12 @@ const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
 const bossImg = new Image();
 bossImg.src = 'boss.svg';
 
+// BGM
+const bgm = new Audio('audio/Dreaming_Stargazer.mp3');
+const bossBgm = new Audio('audio/Assault_of_enemy.mp3');
+bgm.loop = true;
+bossBgm.loop = true;
+
 // ゲーム状態
 let gameState = {
     playing: true,
@@ -184,32 +190,82 @@ class Enemy {
     constructor(x, y, type = 'normal') {
         this.x = x;
         this.y = y;
-        this.width = type === 'boss' ? 75 : 25;
-        this.height = type === 'boss' ? 75 : 25;
-        this.speed = 2;
         this.type = type;
-        this.hp = type === 'boss' ? 10 : 1;
-        this.maxHp = this.hp;
-        this.shootCooldown = 0;
+        if (type === 'boss') {
+            this.width = 225;
+            this.height = 225;
+            const stage = gameState.stage;
+            const hpTable = {1: 8, 2: 12, 3: 15};
+            this.hp = hpTable[stage] || (8 + (stage - 1) * 3 + (stage > 1 ? 1 : 0));
+            this.maxHp = this.hp;
+            this.speed = 1 + stage * 0.5;
+            this.bulletSpeed = 3 + stage;
+            this.shootInterval = Math.max(20, 60 - stage * 5);
+            this.shootCooldown = this.shootInterval;
+            this.pattern = Math.floor(Math.random() * 3);
+            this.attackPattern = Math.floor(Math.random() * 3);
+            this.dx = this.speed; // for bouncing pattern
+        } else {
+            this.width = 25;
+            this.height = 25;
+            this.speed = 2;
+            this.hp = 1;
+            this.maxHp = this.hp;
+            this.shootCooldown = 0;
+        }
     }
 
     update() {
-        this.y += this.speed;
-        
-        // ボスの場合、左右に移動
         if (this.type === 'boss') {
-            this.x += Math.sin(gameState.frameCount * 0.05) * 2;
+            if (this.y < 150) {
+                this.y += this.speed;
+            }
+            const frame = gameState.frameCount;
+            switch (this.pattern) {
+                case 0:
+                    // 横方向にサイン波移動
+                    this.x += Math.sin(frame * 0.05) * (2 + gameState.stage);
+                    break;
+                case 1:
+                    // 画面端で反射する左右移動
+                    this.x += this.dx;
+                    if (this.x < this.width / 2 || this.x > canvas.width - this.width / 2) {
+                        this.dx *= -1;
+                    }
+                    break;
+                case 2:
+                    // 円を描くように移動
+                    this.x = canvas.width / 2 + Math.sin(frame * 0.02) * (canvas.width / 2 - this.width / 2);
+                    this.y = 100 + Math.cos(frame * 0.02) * 50;
+                    break;
+            }
+
             this.shootCooldown--;
             if (this.shootCooldown <= 0) {
                 this.shoot();
-                this.shootCooldown = 30;
+                this.shootCooldown = this.shootInterval;
             }
+        } else {
+            this.y += this.speed;
         }
     }
 
     shoot() {
-        // 敵の弾を追加
-        bullets.push(new Bullet(this.x, this.y + this.height/2, 0, 3, '#ff4444'));
+        const speed = this.bulletSpeed || 3;
+        switch (this.attackPattern) {
+            case 0:
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, 0, speed, '#ff4444'));
+                break;
+            case 1:
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, 0, speed, '#ff4444'));
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, -2, speed, '#ff4444'));
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, 2, speed, '#ff4444'));
+                break;
+            case 2:
+                const angle = Math.atan2(player.y - (this.y + this.height / 2), player.x - this.x);
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, Math.cos(angle) * speed, Math.sin(angle) * speed, '#ff4444'));
+                break;
+        }
     }
 
     draw() {
@@ -372,8 +428,11 @@ function spawnEnemies() {
         if (gameState.stageFrame >= STAGE_DURATION) {
             enemies = [];
             const x = canvas.width / 2;
-            enemies.push(new Enemy(x, -50, 'boss'));
+            enemies.push(new Enemy(x, -150, 'boss'));
             gameState.bossActive = true;
+            bgm.pause();
+            bossBgm.currentTime = 0;
+            bossBgm.play();
         }
     }
 }
@@ -504,6 +563,8 @@ function gameOver() {
     gameState.playing = false;
     finalScoreElement.textContent = gameState.score;
     gameOverElement.classList.remove('hidden');
+    bgm.pause();
+    bossBgm.pause();
 }
 
 // ゲーム再開
@@ -534,14 +595,21 @@ function restartGame() {
     enemies = [];
     items = [];
     explosions = [];
-
     gameOverElement.classList.add('hidden');
+    bossBgm.pause();
+    bossBgm.currentTime = 0;
+    bgm.currentTime = 0;
+    bgm.play();
 }
 
 function nextStage() {
     gameState.stage++;
     gameState.stageFrame = 0;
     gameState.bossActive = false;
+    bossBgm.pause();
+    bossBgm.currentTime = 0;
+    bgm.currentTime = 0;
+    bgm.play();
 }
 
 // UI更新
@@ -657,3 +725,4 @@ function gameLoop() {
 
 // ゲーム開始
 gameLoop();
+bgm.play().catch(() => {});
