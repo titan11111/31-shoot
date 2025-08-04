@@ -16,6 +16,8 @@ body {
   min-height: 100vh;
   padding: 10px;
   overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 #gameContainer {

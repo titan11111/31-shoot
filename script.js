@@ -37,6 +37,11 @@ document.addEventListener('keydown', initAudio, { once: true });
 document.addEventListener('touchstart', initAudio, { once: true });
 document.addEventListener('mousedown', initAudio, { once: true });
 
+// モバイル操作時の画面スクロールやズームを防止
+document.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+}, { passive: false });
+
 // ゲーム状態
 let gameState = {
     playing: true,
