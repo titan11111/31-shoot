@@ -258,8 +258,7 @@ class Enemy {
             this.width = 270;
             this.height = 270;
             const stage = gameState.stage;
-            const hpTable = {1: 8, 2: 12, 3: 15};
-            this.hp = hpTable[stage] || (8 + (stage - 1) * 3 + (stage > 1 ? 1 : 0));
+            this.hp = 10 * (stage + 1); // Stage 1:20, Stage 2:30, Stage 3:40...
             this.maxHp = this.hp;
             this.speed = 1 + stage * 0.5;
             this.bulletSpeed = 3 + stage;
