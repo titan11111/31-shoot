@@ -70,7 +70,8 @@ let player = {
     bombCount: 0,
     hasSatellite: false,
     isPenetrate: false,
-    isMagnet: false
+    isMagnet: false,
+    invincible: 0
 };
 
 // 配列の初期化
@@ -459,6 +460,8 @@ class PowerUp {
                 setTimeout(() => player.isMagnet = false, 15000);
                 break;
         }
+        // パワーアップ取得直後の被弾を防ぐため無敵時間を付与
+        player.invincible = 60;
     }
 
     checkCollision(p) {
@@ -557,6 +560,9 @@ function updatePlayer() {
     }
 
     // 射撃処理
+    if (player.invincible > 0) {
+        player.invincible--;
+    }
     if (player.shootCooldown > 0) {
         player.shootCooldown--;
     }
@@ -683,8 +689,11 @@ function checkCollisions() {
         if (bullet.dy > 0) { // 敵の弾のみ
             if (Math.abs(bullet.x - player.x) < player.width/2 + bullet.width/2 &&
                 Math.abs(bullet.y - player.y) < player.height/2 + bullet.height/2) {
-                
+
                 bullets.splice(bulletIndex, 1);
+                if (player.invincible > 0) {
+                    return;
+                }
                 if (player.shield > 0) {
                     player.shield--;
                     explosions.push(new Explosion(player.x, player.y));
@@ -704,8 +713,10 @@ function checkCollisions() {
     enemies.forEach((enemy, enemyIndex) => {
         if (Math.abs(enemy.x - player.x) < enemy.width/2 + player.width/2 &&
             Math.abs(enemy.y - player.y) < enemy.height/2 + player.height/2) {
-
-            if (player.shield > 0) {
+            if (player.invincible > 0) {
+                explosions.push(new Explosion(enemy.x, enemy.y));
+                enemies.splice(enemyIndex, 1);
+            } else if (player.shield > 0) {
                 player.shield--;
                 explosions.push(new Explosion(player.x, player.y));
                 explosions.push(new Explosion(enemy.x, enemy.y));
@@ -770,7 +781,8 @@ function restartGame() {
         bombCount: 0,
         hasSatellite: false,
         isPenetrate: false,
-        isMagnet: false
+        isMagnet: false,
+        invincible: 0
     };
 
     bullets = [];
