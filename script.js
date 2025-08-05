@@ -107,38 +107,38 @@ document.addEventListener('keyup', (e) => {
 document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
     e.preventDefault();
     touchButtons.left = true;
-});
+}, { passive: false });
 document.getElementById('leftBtn').addEventListener('touchend', (e) => {
     e.preventDefault();
     touchButtons.left = false;
-});
+}, { passive: false });
 
 document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
     e.preventDefault();
     touchButtons.right = true;
-});
+}, { passive: false });
 document.getElementById('rightBtn').addEventListener('touchend', (e) => {
     e.preventDefault();
     touchButtons.right = false;
-});
+}, { passive: false });
 
 document.getElementById('upBtn').addEventListener('touchstart', (e) => {
     e.preventDefault();
     touchButtons.up = true;
-});
+}, { passive: false });
 document.getElementById('upBtn').addEventListener('touchend', (e) => {
     e.preventDefault();
     touchButtons.up = false;
-});
+}, { passive: false });
 
 document.getElementById('downBtn').addEventListener('touchstart', (e) => {
     e.preventDefault();
     touchButtons.down = true;
-});
+}, { passive: false });
 document.getElementById('downBtn').addEventListener('touchend', (e) => {
     e.preventDefault();
     touchButtons.down = false;
-});
+}, { passive: false });
 
 document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
     e.preventDefault();
@@ -147,11 +147,11 @@ document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
         shoot();
         player.shootCooldown = player.shotDelay;
     }
-});
+}, { passive: false });
 document.getElementById('shootBtn').addEventListener('touchend', (e) => {
     e.preventDefault();
     touchButtons.shoot = false;
-});
+}, { passive: false });
 
 // マウスボタンの設定
 document.getElementById('leftBtn').addEventListener('mousedown', () => touchButtons.left = true);
