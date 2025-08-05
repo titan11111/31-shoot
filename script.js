@@ -469,10 +469,19 @@ class PowerUp {
     }
 
     draw(ctx) {
+        ctx.save();
+        const pulse = Math.sin(gameState.frameCount * 0.1) * 2;
+        const r = this.radius + pulse;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.getColor();
+        const gradient = ctx.createRadialGradient(this.x, this.y, r * 0.3, this.x, this.y, r);
+        gradient.addColorStop(0, '#ffffff');
+        gradient.addColorStop(1, this.getColor());
+        ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.getColor();
+        ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
     }
 
     getColor() {
