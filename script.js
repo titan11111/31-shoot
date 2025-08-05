@@ -898,7 +898,7 @@ function gameLoop() {
 
         // 敵更新
         enemies.forEach(enemy => enemy.update());
-        enemies = enemies.filter(enemy => enemy.y < canvas.height + 50 && enemy.y > -50);
+        enemies = enemies.filter(enemy => enemy.y < canvas.height + 50 && (enemy.y > -50 || enemy.type === 'boss'));
 
         // アイテム更新
         items.forEach(item => item.update());
