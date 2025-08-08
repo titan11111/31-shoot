@@ -259,7 +259,7 @@ class Enemy {
             this.width = 270;
             this.height = 270;
             const stage = gameState.stage;
-            this.hp = 10 * (stage + 1); // Stage 1:20, Stage 2:30, Stage 3:40...
+            this.hp = 50; // Requires 50 hits to defeat
             this.maxHp = this.hp;
             this.speed = 1 + stage * 0.5;
             this.bulletSpeed = 3 + stage;
