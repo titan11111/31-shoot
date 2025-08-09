@@ -15,6 +15,16 @@ const restartBtn = document.getElementById('restartBtn');
 
 const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
 
+// ステージごとのボス設定を取得
+function getBossConfig(stage) {
+    const pattern = (stage - 1) % 3;
+    const attackPattern = Math.floor((stage - 1) / 3) % 3;
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ffff00', '#ffffff', '#ffa500', '#ff1493'];
+    const color = colors[(stage - 1) % colors.length];
+    const hp = 50 + (stage - 1) * 10;
+    return { pattern, attackPattern, color, hp };
+}
+
 // ボス画像の読み込み
 const bossImg = new Image();
 bossImg.src = 'boss.svg';
@@ -260,14 +270,16 @@ class Enemy {
             this.width = 270;
             this.height = 270;
             const stage = gameState.stage;
-            this.hp = 50; // Requires 50 hits to defeat
+            const config = getBossConfig(stage);
+            this.hp = config.hp;
             this.maxHp = this.hp;
             this.speed = 1 + stage * 0.5;
             this.bulletSpeed = 3 + stage;
             this.shootInterval = Math.max(20, 60 - stage * 5);
             this.shootCooldown = this.shootInterval;
-            this.pattern = Math.floor(Math.random() * 3);
-            this.attackPattern = Math.floor(Math.random() * 3);
+            this.pattern = config.pattern;
+            this.attackPattern = config.attackPattern;
+            this.color = config.color;
             this.dx = this.speed; // for bouncing pattern
         } else {
             this.width = 30;
@@ -368,8 +380,14 @@ class Enemy {
             // ボス敵
             if (bossImg.loaded) {
                 ctx.drawImage(bossImg, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.globalAlpha = 0.6;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                ctx.restore();
             } else {
-                ctx.fillStyle = '#ff0000';
+                ctx.fillStyle = this.color;
                 ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
             }
 
