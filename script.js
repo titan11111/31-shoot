@@ -41,6 +41,12 @@ let audioInitialized = false;
 function initAudio() {
     if (!audioInitialized) {
         bgm.play().catch(() => {});
+        bossBgm.play()
+            .then(() => {
+                bossBgm.pause();
+                bossBgm.currentTime = 0;
+            })
+            .catch(() => {});
         audioInitialized = true;
     }
 }
