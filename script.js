@@ -181,7 +181,7 @@ restartBtn.addEventListener('click', restartGame);
 
 // 弾丸クラス
 class Bullet {
-    constructor(x, y, dx, dy, color = '#ffff00', homing = false, penetrate = false) {
+    constructor(x, y, dx, dy, color = '#ffff00', homing = false, penetrate = false, isEnemy = false) {
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -191,6 +191,7 @@ class Bullet {
         this.color = color;
         this.homing = homing;
         this.penetrate = penetrate;
+        this.isEnemy = isEnemy;
     }
 
     update() {
@@ -348,16 +349,16 @@ class Enemy {
         const speed = this.bulletSpeed || 3;
         switch (this.attackPattern) {
             case 0:
-                bullets.push(new Bullet(this.x, this.y + this.height / 2, 0, speed, '#ff4444'));
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, 0, speed, '#ff4444', false, false, true));
                 break;
             case 1:
-                bullets.push(new Bullet(this.x, this.y + this.height / 2, 0, speed, '#ff4444'));
-                bullets.push(new Bullet(this.x, this.y + this.height / 2, -2, speed, '#ff4444'));
-                bullets.push(new Bullet(this.x, this.y + this.height / 2, 2, speed, '#ff4444'));
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, 0, speed, '#ff4444', false, false, true));
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, -2, speed, '#ff4444', false, false, true));
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, 2, speed, '#ff4444', false, false, true));
                 break;
             case 2:
                 const angle = Math.atan2(player.y - (this.y + this.height / 2), player.x - this.x);
-                bullets.push(new Bullet(this.x, this.y + this.height / 2, Math.cos(angle) * speed, Math.sin(angle) * speed, '#ff4444'));
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, Math.cos(angle) * speed, Math.sin(angle) * speed, '#ff4444', false, false, true));
                 break;
         }
     }
@@ -633,7 +634,7 @@ function spawnEnemies() {
 function checkCollisions() {
     // プレイヤーの弾と敵の当たり判定
     bullets.forEach((bullet, bulletIndex) => {
-        if (bullet.dy < 0) { // プレイヤーの弾のみ
+        if (!bullet.isEnemy) { // プレイヤーの弾のみ
             enemies.forEach((enemy, enemyIndex) => {
                 if (Math.abs(bullet.x - enemy.x) < enemy.width/2 + bullet.width/2 &&
                     Math.abs(bullet.y - enemy.y) < enemy.height/2 + bullet.height/2) {
@@ -686,7 +687,7 @@ function checkCollisions() {
 
     // 敵の弾とプレイヤーの当たり判定
     bullets.forEach((bullet, bulletIndex) => {
-        if (bullet.dy > 0) { // 敵の弾のみ
+        if (bullet.isEnemy) { // 敵の弾のみ
             if (Math.abs(bullet.x - player.x) < player.width/2 + bullet.width/2 &&
                 Math.abs(bullet.y - player.y) < player.height/2 + bullet.height/2) {
 
