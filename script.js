@@ -84,7 +84,6 @@ let player = {
     isWide: false,
     isHoming: false,
     bombCount: 0,
-    hasSatellite: false,
     isPenetrate: false,
     isMagnet: false,
     invincible: 0
@@ -455,22 +454,20 @@ class PowerUp {
                 player.isHoming = true;
                 setTimeout(() => player.isHoming = false, 10000);
                 break;
-            case 'speed':
-                player.speed += 2;
-                setTimeout(() => player.speed -= 2, 10000);
+            case 'heal':
+                gameState.life = Math.min(gameState.life + 1, 5);
                 break;
             case 'barrier':
-                player.shield = 1;
+                player.shield++;
                 break;
             case 'bomb':
                 player.bombCount = Math.min(player.bombCount + 1, 5);
                 break;
             case 'satellite':
-                player.hasSatellite = true;
-                if (satellites.length === 0) {
-                    satellites.push({ angle: 0, shootCooldown: 0 }, { angle: Math.PI, shootCooldown: 0 });
-                }
-                setTimeout(() => { player.hasSatellite = false; satellites = []; }, 20000);
+                satellites.push({ angle: 0, shootCooldown: 0 });
+                satellites.forEach((sat, index) => {
+                    sat.angle = (index * Math.PI * 2) / satellites.length;
+                });
                 break;
             case 'rapid':
                 player.shotDelay = 5;
@@ -516,7 +513,7 @@ class PowerUp {
             'shotLevelUp': 'red',
             'wide': 'orange',
             'homing': 'purple',
-            'speed': 'green',
+            'heal': 'green',
             'barrier': 'blue',
             'bomb': 'black',
             'satellite': 'silver',
@@ -622,7 +619,7 @@ function shoot() {
 }
 
 function spawnPowerUp(x, y) {
-    const types = ['shotLevelUp', 'wide', 'homing', 'speed', 'barrier', 'bomb', 'satellite', 'rapid', 'penetrate', 'magnet'];
+    const types = ['shotLevelUp', 'wide', 'homing', 'heal', 'barrier', 'bomb', 'satellite', 'rapid', 'penetrate', 'magnet'];
     const type = types[Math.floor(Math.random() * types.length)];
     items.push(new PowerUp(type, x, y));
 }
@@ -804,7 +801,6 @@ function restartGame() {
         isWide: false,
         isHoming: false,
         bombCount: 0,
-        hasSatellite: false,
         isPenetrate: false,
         isMagnet: false,
         invincible: 0
