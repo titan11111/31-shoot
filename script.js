@@ -24,7 +24,7 @@ function getBossConfig(stage) {
     const attackPattern = (stage - 1) % 5;
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ffff00', '#ffffff', '#ffa500', '#ff1493'];
     const color = colors[(stage - 1) % colors.length];
-    const hp = 50 + (stage - 1) * 10;
+    const hp = stage + 1;
     return { pattern, attackPattern, color, hp };
 }
 
@@ -304,7 +304,7 @@ class Enemy {
             this.width = 30;
             this.height = 30;
             this.speed = 2;
-            this.hp = 1;
+            this.hp = gameState.stage + 1;
             this.maxHp = this.hp;
             this.shootCooldown = 0;
             this.movement = movement;
