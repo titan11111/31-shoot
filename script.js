@@ -12,13 +12,16 @@ const gameContainer = document.getElementById('gameContainer');
 const gameOverElement = document.getElementById('gameOver');
 const finalScoreElement = document.getElementById('finalScore');
 const restartBtn = document.getElementById('restartBtn');
+const gameClearElement = document.getElementById('gameClear');
+const clearScoreElement = document.getElementById('clearScore');
+const clearRestartBtn = document.getElementById('clearRestartBtn');
 
 const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
 
 // ステージごとのボス設定を取得
 function getBossConfig(stage) {
     const pattern = (stage - 1) % 3;
-    const attackPattern = Math.floor((stage - 1) / 3) % 3;
+    const attackPattern = (stage - 1) % 5;
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ffff00', '#ffffff', '#ffa500', '#ff1493'];
     const color = colors[(stage - 1) % colors.length];
     const hp = 50 + (stage - 1) * 10;
@@ -86,7 +89,9 @@ let player = {
     bombCount: 0,
     isPenetrate: false,
     isMagnet: false,
-    invincible: 0
+    invincible: 0,
+    sleepMissile: false,
+    sleepCooldown: 0
 };
 
 // 配列の初期化
@@ -193,10 +198,11 @@ document.getElementById('shootBtn').addEventListener('mouseup', (e) => {
 
 // リスタートボタン
 restartBtn.addEventListener('click', restartGame);
+clearRestartBtn.addEventListener('click', restartGame);
 
 // 弾丸クラス
 class Bullet {
-    constructor(x, y, dx, dy, color = '#ffff00', homing = false, penetrate = false, isEnemy = false) {
+    constructor(x, y, dx, dy, color = '#ffff00', homing = false, penetrate = false, isEnemy = false, sleep = false) {
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -207,24 +213,32 @@ class Bullet {
         this.homing = homing;
         this.penetrate = penetrate;
         this.isEnemy = isEnemy;
+        this.sleep = sleep;
     }
 
     update() {
-        if (this.homing && enemies.length > 0) {
-            let target = null;
-            let minDist = Infinity;
-            enemies.forEach(enemy => {
-                const dist = Math.hypot(enemy.x - this.x, enemy.y - this.y);
-                if (dist < minDist) {
-                    minDist = dist;
-                    target = enemy;
-                }
-            });
-            if (target) {
-                const angle = Math.atan2(target.y - this.y, target.x - this.x);
+        if (this.homing) {
+            if (this.isEnemy) {
+                const angle = Math.atan2(player.y - this.y, player.x - this.x);
                 const speed = Math.hypot(this.dx, this.dy);
                 this.dx = Math.cos(angle) * speed;
                 this.dy = Math.sin(angle) * speed;
+            } else if (enemies.length > 0) {
+                let target = null;
+                let minDist = Infinity;
+                enemies.forEach(enemy => {
+                    const dist = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        target = enemy;
+                    }
+                });
+                if (target) {
+                    const angle = Math.atan2(target.y - this.y, target.x - this.x);
+                    const speed = Math.hypot(this.dx, this.dy);
+                    this.dx = Math.cos(angle) * speed;
+                    this.dy = Math.sin(angle) * speed;
+                }
             }
         }
         this.x += this.dx;
@@ -297,6 +311,7 @@ class Enemy {
             this.direction = Math.random() < 0.5 ? -1 : 1;
             this.color = this.getColor();
         }
+        this.sleepTimer = 0;
     }
 
     getColor() {
@@ -313,6 +328,10 @@ class Enemy {
     }
 
     update() {
+        if (this.sleepTimer > 0) {
+            this.sleepTimer--;
+            return;
+        }
         if (this.type === 'boss') {
             if (this.y < 150) {
                 this.y += this.speed;
@@ -376,6 +395,15 @@ class Enemy {
             case 2:
                 const angle = Math.atan2(player.y - (this.y + this.height / 2), player.x - this.x);
                 bullets.push(new Bullet(this.x, this.y + this.height / 2, Math.cos(angle) * speed, Math.sin(angle) * speed, '#ff4444', false, false, true));
+                break;
+            case 3:
+                bullets.push(new Bullet(this.x, this.y + this.height / 2, 0, speed, '#ff4444', true, false, true));
+                break;
+            case 4:
+                for (let i = 0; i < 12; i++) {
+                    const a = (Math.PI * 2 / 12) * i;
+                    bullets.push(new Bullet(this.x, this.y + this.height / 2, Math.cos(a) * speed, Math.sin(a) * speed, '#ff4444', false, false, true));
+                }
                 break;
         }
     }
@@ -481,6 +509,10 @@ class PowerUp {
                 player.isMagnet = true;
                 setTimeout(() => player.isMagnet = false, 15000);
                 break;
+            case 'sleep':
+                player.sleepMissile = true;
+                player.sleepCooldown = 0;
+                break;
         }
         // パワーアップ取得直後の被弾を防ぐため無敵時間を付与
         player.invincible = 60;
@@ -517,9 +549,10 @@ class PowerUp {
             'barrier': 'blue',
             'bomb': 'black',
             'satellite': 'silver',
-            'rapid': 'yellow',
+            'rapid': 'deepskyblue',
             'penetrate': 'magenta',
-            'magnet': 'aqua',
+            'magnet': 'pink',
+            'sleep': 'darkviolet',
         }[this.type] || 'white';
     }
 }
@@ -593,6 +626,14 @@ function updatePlayer() {
         shoot();
         player.shootCooldown = player.shotDelay;
     }
+
+    if (player.sleepMissile) {
+        player.sleepCooldown--;
+        if (player.sleepCooldown <= 0) {
+            bullets.push(new Bullet(player.x, player.y - player.height/2, 0, -6, '#9932cc', true, false, false, true));
+            player.sleepCooldown = 600;
+        }
+    }
 }
 
 // 射撃システム
@@ -619,7 +660,7 @@ function shoot() {
 }
 
 function spawnPowerUp(x, y) {
-    const types = ['shotLevelUp', 'wide', 'homing', 'heal', 'barrier', 'bomb', 'satellite', 'rapid', 'penetrate', 'magnet'];
+    const types = ['shotLevelUp', 'wide', 'homing', 'heal', 'barrier', 'bomb', 'satellite', 'rapid', 'penetrate', 'magnet', 'sleep'];
     const type = types[Math.floor(Math.random() * types.length)];
     items.push(new PowerUp(type, x, y));
 }
@@ -661,6 +702,9 @@ function checkCollisions() {
                     Math.abs(bullet.y - enemy.y) < enemy.height/2 + bullet.height/2) {
 
                     enemy.hp--;
+                    if (bullet.sleep) {
+                        enemy.sleepTimer = 180;
+                    }
                     if (!bullet.penetrate) {
                         bullets.splice(bulletIndex, 1);
                     }
@@ -776,6 +820,14 @@ function gameOver() {
     bossBgm.pause();
 }
 
+function gameClear() {
+    gameState.playing = false;
+    clearScoreElement.textContent = gameState.score;
+    gameClearElement.classList.remove('hidden');
+    bgm.pause();
+    bossBgm.pause();
+}
+
 // ゲーム再開
 function restartGame() {
     gameState = {
@@ -803,7 +855,9 @@ function restartGame() {
         bombCount: 0,
         isPenetrate: false,
         isMagnet: false,
-        invincible: 0
+        invincible: 0,
+        sleepMissile: false,
+        sleepCooldown: 0
     };
 
     bullets = [];
@@ -813,6 +867,7 @@ function restartGame() {
     satellites = [];
     explosions = [];
     gameOverElement.classList.add('hidden');
+    gameClearElement.classList.add('hidden');
     bossBgm.pause();
     bossBgm.currentTime = 0;
     bgm.currentTime = 0;
@@ -820,6 +875,10 @@ function restartGame() {
 }
 
 function nextStage() {
+    if (gameState.stage >= 5) {
+        gameClear();
+        return;
+    }
     gameState.stage++;
     gameState.stageFrame = 0;
     gameState.bossActive = false;
