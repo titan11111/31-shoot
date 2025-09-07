@@ -523,6 +523,8 @@ class PowerUp {
                 player.sleepCooldown = 0;
                 break;
         }
+        // どのアイテムを取得しても自機のパワーを強化
+        gameState.power = Math.min(gameState.power + 1, 3);
         // パワーアップ取得直後の被弾を防ぐため無敵時間を付与
         player.invincible = 60;
     }
