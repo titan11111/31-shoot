@@ -71,7 +71,8 @@ let gameState = {
     frameCount: 0,
     stage: 1,
     stageFrame: 0,
-    bossActive: false
+    bossActive: false,
+    enemySlowTimer: 0
 };
 
 // プレイヤー
@@ -332,27 +333,28 @@ class Enemy {
             this.sleepTimer--;
             return;
         }
+        const speedFactor = gameState.enemySlowTimer > 0 ? 0.5 : 1;
         if (this.type === 'boss') {
             if (this.y < 150) {
-                this.y += this.speed;
+                this.y += this.speed * speedFactor;
             }
             const frame = gameState.frameCount;
             switch (this.pattern) {
                 case 0:
                     // 横方向にサイン波移動
-                    this.x += Math.sin(frame * 0.05) * (2 + gameState.stage);
+                    this.x += Math.sin(frame * 0.05) * (2 + gameState.stage) * speedFactor;
                     break;
                 case 1:
                     // 画面端で反射する左右移動
-                    this.x += this.dx;
+                    this.x += this.dx * speedFactor;
                     if (this.x < this.width / 2 || this.x > canvas.width - this.width / 2) {
                         this.dx *= -1;
                     }
                     break;
                 case 2:
                     // 円を描くように移動
-                    this.x = canvas.width / 2 + Math.sin(frame * 0.02) * (canvas.width / 2 - this.width / 2);
-                    this.y = 100 + Math.cos(frame * 0.02) * 50;
+                    this.x = canvas.width / 2 + Math.sin(frame * 0.02 * speedFactor) * (canvas.width / 2 - this.width / 2);
+                    this.y = 100 + Math.cos(frame * 0.02 * speedFactor) * 50;
                     break;
             }
 
@@ -364,19 +366,19 @@ class Enemy {
         } else {
             switch (this.movement) {
                 case 'zigzag':
-                    this.y += this.speed;
-                    this.x += Math.sin(gameState.frameCount * 0.1) * 2 * this.direction;
+                    this.y += this.speed * speedFactor;
+                    this.x += Math.sin(gameState.frameCount * 0.1) * 2 * this.direction * speedFactor;
                     break;
                 case 'chase':
                     const angle = Math.atan2(player.y - this.y, player.x - this.x);
-                    this.x += Math.cos(angle) * this.speed;
-                    this.y += Math.sin(angle) * this.speed;
+                    this.x += Math.cos(angle) * this.speed * speedFactor;
+                    this.y += Math.sin(angle) * this.speed * speedFactor;
                     break;
                 case 'fromBottom':
-                    this.y -= this.speed;
+                    this.y -= this.speed * speedFactor;
                     break;
                 default:
-                    this.y += this.speed;
+                    this.y += this.speed * speedFactor;
             }
         }
     }
@@ -509,6 +511,13 @@ class PowerUp {
                 player.isMagnet = true;
                 setTimeout(() => player.isMagnet = false, 15000);
                 break;
+            case 'speed':
+                player.speed += 2;
+                setTimeout(() => player.speed -= 2, 10000);
+                break;
+            case 'slow':
+                gameState.enemySlowTimer = 300;
+                break;
             case 'sleep':
                 player.sleepMissile = true;
                 player.sleepCooldown = 0;
@@ -553,6 +562,8 @@ class PowerUp {
             'penetrate': 'magenta',
             'magnet': 'pink',
             'sleep': 'darkviolet',
+            'speed': 'aqua',
+            'slow': 'lavenderblush',
         }[this.type] || 'white';
     }
 }
@@ -660,7 +671,7 @@ function shoot() {
 }
 
 function spawnPowerUp(x, y) {
-    const types = ['shotLevelUp', 'wide', 'homing', 'heal', 'barrier', 'bomb', 'satellite', 'rapid', 'penetrate', 'magnet', 'sleep'];
+    const types = ['shotLevelUp', 'wide', 'homing', 'heal', 'barrier', 'bomb', 'satellite', 'rapid', 'penetrate', 'magnet', 'sleep', 'speed', 'slow'];
     const type = types[Math.floor(Math.random() * types.length)];
     items.push(new PowerUp(type, x, y));
 }
@@ -838,7 +849,8 @@ function restartGame() {
         frameCount: 0,
         stage: 1,
         stageFrame: 0,
-        bossActive: false
+        bossActive: false,
+        enemySlowTimer: 0
     };
     
     player = {
@@ -971,6 +983,9 @@ function gameLoop() {
         gameState.frameCount++;
         if (!gameState.bossActive) {
             gameState.stageFrame++;
+        }
+        if (gameState.enemySlowTimer > 0) {
+            gameState.enemySlowTimer--;
         }
 
         updatePlayer();
