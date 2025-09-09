@@ -75,16 +75,16 @@ body {
 }
 
 #touchControls button {
-  width: calc(72px * 1.5);
-  height: calc(72px * 1.5);
-  font-size: calc(1.8em * 1.5);
+  width: calc(72px * 1.5 * 1.1);
+  height: calc(72px * 1.5 * 1.1);
+  font-size: calc(1.8em * 1.5 * 1.1);
   font-weight: bold;
   border: none;
   border-radius: 10px;
   background: linear-gradient(145deg, #4CAF50, #45a049);
   color: white;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.066s;
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
@@ -104,9 +104,9 @@ body {
 #downBtn { grid-column: 2; grid-row: 3; }
 #shootBtn {
   background: linear-gradient(145deg, #f44336, #d32f2f);
-  width: calc(72px * 1.5 * 1.5);
-  height: calc(72px * 1.5 * 1.5);
-  font-size: calc(1.8em * 1.5 * 1.5);
+  width: calc(72px * 1.5 * 1.5 * 1.1);
+  height: calc(72px * 1.5 * 1.5 * 1.1);
+  font-size: calc(1.8em * 1.5 * 1.5 * 1.1);
 }
 
 
@@ -172,17 +172,17 @@ body {
       max-width: 350px;
   }
 
-    #touchControls button {
-        width: calc(60px * 1.5);
-        height: calc(60px * 1.5);
-        font-size: calc(1.44em * 1.5);
-    }
+  #touchControls button {
+      width: calc(60px * 1.5 * 1.1);
+      height: calc(60px * 1.5 * 1.1);
+      font-size: calc(1.44em * 1.5 * 1.1);
+  }
 
-    #shootBtn {
-        width: calc(60px * 1.5 * 1.5);
-        height: calc(60px * 1.5 * 1.5);
-        font-size: calc(1.44em * 1.5 * 1.5);
-    }
+  #shootBtn {
+      width: calc(60px * 1.5 * 1.5 * 1.1);
+      height: calc(60px * 1.5 * 1.5 * 1.1);
+      font-size: calc(1.44em * 1.5 * 1.5 * 1.1);
+  }
   
 }
 
@@ -192,14 +192,14 @@ body {
   }
   
   #touchControls button {
-      width: calc(48px * 1.5);
-      height: calc(48px * 1.5);
-      font-size: calc(1.2em * 1.5);
+      width: calc(48px * 1.5 * 1.1);
+      height: calc(48px * 1.5 * 1.1);
+      font-size: calc(1.2em * 1.5 * 1.1);
   }
 
   #shootBtn {
-      width: calc(48px * 1.5 * 1.5);
-      height: calc(48px * 1.5 * 1.5);
-      font-size: calc(1.2em * 1.5 * 1.5);
+      width: calc(48px * 1.5 * 1.5 * 1.1);
+      height: calc(48px * 1.5 * 1.5 * 1.1);
+      font-size: calc(1.2em * 1.5 * 1.5 * 1.1);
   }
 }
