@@ -15,6 +15,8 @@ const restartBtn = document.getElementById('restartBtn');
 const gameClearElement = document.getElementById('gameClear');
 const clearScoreElement = document.getElementById('clearScore');
 const clearRestartBtn = document.getElementById('clearRestartBtn');
+const startScreen = document.getElementById('startScreen');
+const startBtn = document.getElementById('startBtn');
 
 const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
 
@@ -24,7 +26,7 @@ function getBossConfig(stage) {
     const attackPattern = (stage - 1) % 5;
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ffff00', '#ffffff', '#ffa500', '#ff1493'];
     const color = colors[(stage - 1) % colors.length];
-    const hp = stage + 1;
+    const hp = (stage + 1) * 100;
     return { pattern, attackPattern, color, hp };
 }
 
@@ -53,9 +55,6 @@ function initAudio() {
         audioInitialized = true;
     }
 }
-document.addEventListener('keydown', initAudio, { once: true });
-document.addEventListener('touchstart', initAudio, { once: true });
-document.addEventListener('mousedown', initAudio, { once: true });
 
 // モバイル操作時の画面スクロールやズームを防止
 document.addEventListener('touchmove', (e) => {
@@ -64,7 +63,7 @@ document.addEventListener('touchmove', (e) => {
 
 // ゲーム状態
 let gameState = {
-    playing: true,
+    playing: false,
     score: 0,
     life: 3,
     power: 1,
@@ -200,6 +199,7 @@ document.getElementById('shootBtn').addEventListener('mouseup', (e) => {
 // リスタートボタン
 restartBtn.addEventListener('click', restartGame);
 clearRestartBtn.addEventListener('click', restartGame);
+startBtn.addEventListener('click', startGame);
 
 // 弾丸クラス
 class Bullet {
@@ -841,8 +841,16 @@ function gameClear() {
     bossBgm.pause();
 }
 
+function startGame() {
+    startScreen.classList.add('hidden');
+    gameState.playing = true;
+    initAudio();
+    bgm.play().catch(() => {});
+}
+
 // ゲーム再開
 function restartGame() {
+    startScreen.classList.add('hidden');
     gameState = {
         playing: true,
         score: 0,
