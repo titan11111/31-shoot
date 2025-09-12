@@ -134,7 +134,7 @@ body {
   font-size: 2em;
 }
 
-#restartBtn, #clearRestartBtn {
+#restartBtn, #clearRestartBtn, #startBtn {
   background: linear-gradient(145deg, #4CAF50, #45a049);
   color: white;
   border: none;
@@ -146,13 +146,52 @@ body {
   transition: all 0.3s;
 }
 
-#restartBtn:hover, #clearRestartBtn:hover {
+#restartBtn:hover, #clearRestartBtn:hover, #startBtn:hover {
   transform: scale(1.05);
   box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
 }
 
 .hidden {
   display: none;
+}
+
+#startScreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#itemList {
+  text-align: left;
+  margin-bottom: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#itemList li {
+  list-style: none;
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  font-size: 0.9em;
+}
+
+.colorBox {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 1px solid #fff;
 }
 
 /* スマホ対応 */
