@@ -84,7 +84,7 @@ body {
   background: linear-gradient(145deg, #4CAF50, #45a049);
   color: white;
   cursor: pointer;
-  transition: all 0.066s;
+  transition: all 0.022s;
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
@@ -143,7 +143,7 @@ body {
   border-radius: 10px;
   cursor: pointer;
   margin-top: 15px;
-  transition: all 0.3s;
+  transition: all 0.1s;
 }
 
 #restartBtn:hover, #clearRestartBtn:hover {
