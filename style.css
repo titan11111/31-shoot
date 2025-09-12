@@ -171,6 +171,10 @@ body {
   box-sizing: border-box;
 }
 
+#startScreen.hidden {
+  display: none;
+}
+
 #itemList {
   text-align: left;
   margin-bottom: 15px;
