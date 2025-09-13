@@ -102,12 +102,27 @@ body {
 #rightBtn { grid-column: 3; grid-row: 2; }
 #upBtn { grid-column: 2; grid-row: 1; }
 #downBtn { grid-column: 2; grid-row: 3; }
-#shootBtn {
-  background: linear-gradient(145deg, #f44336, #d32f2f);
-  width: calc(72px * 1.5 * 1.5 * 1.1);
-  height: calc(72px * 1.5 * 1.5 * 1.1);
-  font-size: calc(1.8em * 1.5 * 1.5 * 1.1);
-}
+  #shootBtn {
+    background: linear-gradient(145deg, #f44336, #d32f2f);
+    width: calc(72px * 1.5 * 1.5 * 1.1);
+    height: calc(72px * 1.5 * 1.5 * 1.1);
+    font-size: calc(1.8em * 1.5 * 1.5 * 1.1);
+  }
+
+  #bombContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #bombBtn {
+    background: linear-gradient(145deg, #9e9e9e, #757575);
+  }
+
+  #bombCountDisplay {
+    margin-top: 5px;
+    font-size: 1.2em;
+  }
 
 
 #gameOver, #gameClear {
