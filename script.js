@@ -822,6 +822,30 @@ function checkCollisions() {
         }
     });
 
+    // サテライトと敵の当たり判定（接触ダメージ）
+    satellites.forEach(sat => {
+        enemies.forEach((enemy, enemyIndex) => {
+            const dist = Math.hypot(sat.x - enemy.x, sat.y - enemy.y);
+            const enemyRadius = Math.max(enemy.width, enemy.height) / 2;
+            if (dist < enemyRadius + 8) {
+                enemy.hp--;
+                if (enemy.hp <= 0) {
+                    explosions.push(new Explosion(enemy.x, enemy.y));
+                    gameState.score += enemy.type === 'boss' ? 100 : 10;
+
+                    if (Math.random() < 0.3) {
+                        spawnPowerUp(enemy.x, enemy.y);
+                    }
+
+                    enemies.splice(enemyIndex, 1);
+                    if (enemy.type === 'boss') {
+                        nextStage();
+                    }
+                }
+            }
+        });
+    });
+
 }
 
 function useBomb() {
