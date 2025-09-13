@@ -698,9 +698,11 @@ function spawnEnemies() {
         }
 
         if (gameState.stageFrame >= STAGE_DURATION) {
-            enemies = [];
+            // Clear existing enemies while keeping reference for homing bullets
+            enemies.length = 0;
+            // Spawn the boss slightly above the visible area
             const x = canvas.width / 2;
-            enemies.push(new Enemy(x, -200, 'boss'));
+            enemies.push(new Enemy(x, -150, 'boss'));
             gameState.bossActive = true;
             bgm.pause();
             bossBgm.currentTime = 0;
@@ -901,7 +903,8 @@ function restartGame() {
 }
 
 function nextStage() {
-    if (gameState.stage >= 5) {
+    // Increase total stages to six before clearing the game
+    if (gameState.stage >= 6) {
         gameClear();
         return;
     }
