@@ -19,6 +19,7 @@ const startScreen = document.getElementById('startScreen');
 const startBtn = document.getElementById('startBtn');
 
 const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
+const MAX_SATELLITES = 4; // Maximum number of support satellites
 
 // ステージごとのボス設定を取得
 function getBossConfig(stage) {
@@ -498,7 +499,9 @@ class PowerUp {
                 player.bombCount = Math.min(player.bombCount + 1, 5);
                 break;
             case 'satellite':
-                satellites.push({ angle: 0, shootCooldown: 0 });
+                if (satellites.length < MAX_SATELLITES) {
+                    satellites.push({ angle: 0, shootCooldown: 0 });
+                }
                 satellites.forEach((sat, index) => {
                     sat.angle = (index * Math.PI * 2) / satellites.length;
                 });
