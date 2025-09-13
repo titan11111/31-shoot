@@ -17,6 +17,9 @@ const clearScoreElement = document.getElementById('clearScore');
 const clearRestartBtn = document.getElementById('clearRestartBtn');
 const startScreen = document.getElementById('startScreen');
 const startBtn = document.getElementById('startBtn');
+const bombContainer = document.getElementById('bombContainer');
+const bombCountDisplay = document.getElementById('bombCountDisplay');
+const bombBtn = document.getElementById('bombBtn');
 
 const STAGE_DURATION = 60 * 60; // 1 minute at 60 FPS
 const MAX_SATELLITES = 4; // Maximum number of support satellites
@@ -175,6 +178,11 @@ document.getElementById('shootBtn').addEventListener('touchend', (e) => {
     touchButtons.shoot = false;
 }, { passive: false });
 
+bombBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    useBomb();
+}, { passive: false });
+
 // マウスボタンの設定
 document.getElementById('leftBtn').addEventListener('mousedown', () => touchButtons.left = true);
 document.getElementById('leftBtn').addEventListener('mouseup', () => touchButtons.left = false);
@@ -195,6 +203,11 @@ document.getElementById('shootBtn').addEventListener('mousedown', (e) => {
 document.getElementById('shootBtn').addEventListener('mouseup', (e) => {
     e.preventDefault();
     touchButtons.shoot = false;
+});
+
+bombBtn.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    useBomb();
 });
 
 // リスタートボタン
@@ -854,6 +867,7 @@ function useBomb() {
         enemies.forEach(enemy => explosions.push(new Explosion(enemy.x, enemy.y)));
         enemies = [];
         bullets = bullets.filter(b => b.dy < 0);
+        updateUI();
     }
 }
 
@@ -954,6 +968,12 @@ function updateUI() {
     powerElement.textContent = `パワー: ${gameState.power}${gameState.power >= 3 ? ' (MAX)' : ''}`;
     shieldElement.textContent = `バリア: ${player.shield}`;
     stageElement.textContent = `ステージ: ${gameState.stage}`;
+    if (player.bombCount > 0) {
+        bombContainer.classList.remove('hidden');
+        bombCountDisplay.textContent = player.bombCount;
+    } else {
+        bombContainer.classList.add('hidden');
+    }
 }
 
 // 描画
