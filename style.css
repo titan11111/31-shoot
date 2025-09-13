@@ -102,6 +102,11 @@ body {
 #rightBtn { grid-column: 3; grid-row: 2; }
 #upBtn { grid-column: 2; grid-row: 1; }
 #downBtn { grid-column: 2; grid-row: 3; }
+  #fireControls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
   #shootBtn {
     background: linear-gradient(145deg, #f44336, #d32f2f);
     width: calc(72px * 1.5 * 1.5 * 1.1);
