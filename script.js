@@ -311,8 +311,8 @@ class Enemy {
             this.speed = 1 + stage * 0.5;
             this.bulletSpeed = 3 + stage;
             if (stage === 4) {
-                // ステージ4のボスの追尾弾を少し遅くする
-                this.bulletSpeed = 5;
+                // ステージ4のボスの追尾弾をさらに遅くする
+                this.bulletSpeed = 4;
             }
             this.shootInterval = Math.max(20, 60 - stage * 5);
             this.shootCooldown = this.shootInterval;
