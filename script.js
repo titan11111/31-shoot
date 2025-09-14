@@ -30,7 +30,8 @@ function getBossConfig(stage) {
     const attackPattern = (stage - 1) % 5;
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ffff00', '#ffffff', '#ffa500', '#ff1493'];
     const color = colors[(stage - 1) % colors.length];
-    const hp = (stage + 1) * 100;
+    const hpValues = [100, 500, 600, 660, 770, 1000];
+    const hp = hpValues[stage - 1] || (stage + 1) * 100;
     return { pattern, attackPattern, color, hp };
 }
 
