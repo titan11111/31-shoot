@@ -27,9 +27,13 @@ const MAX_SATELLITES = 4; // Maximum number of support satellites
 // ステージごとのボス設定を取得
 function getBossConfig(stage) {
     const pattern = (stage - 1) % 3;
-    const attackPattern = (stage - 1) % 5;
+    let attackPattern = (stage - 1) % 5;
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ffff00', '#ffffff', '#ffa500', '#ff1493'];
-    const color = colors[(stage - 1) % colors.length];
+    let color = colors[(stage - 1) % colors.length];
+    if (stage === 6) {
+        attackPattern = 4;
+        color = '#ff0000';
+    }
     const hpValues = [100, 500, 600, 660, 770, 1000];
     const hp = hpValues[stage - 1] || (stage + 1) * 100;
     return { pattern, attackPattern, color, hp };
@@ -39,6 +43,9 @@ function getBossConfig(stage) {
 const bossImg = new Image();
 bossImg.src = 'boss.svg';
 bossImg.onload = () => { bossImg.loaded = true; };
+const finalBossImg = new Image();
+finalBossImg.src = 'boss_final.svg';
+finalBossImg.onload = () => { finalBossImg.loaded = true; };
 
 // BGM
 const bgm = new Audio('audio/Dreaming_Stargazer.mp3');
@@ -302,29 +309,33 @@ class Enemy {
         this.y = y;
         this.type = type;
         if (type === 'boss') {
-            this.width = 270;
-            this.height = 270;
             const stage = gameState.stage;
+            this.width = this.height = stage === 6 ? 320 : 270;
             const config = getBossConfig(stage);
             this.hp = config.hp;
             this.maxHp = this.hp;
             this.speed = 1 + stage * 0.5;
-            this.bulletSpeed = 3 + stage;
+            this.bulletSpeed = 4 + stage;
             if (stage === 4) {
-                // ステージ4のボスの追尾弾をさらに遅くする
-                this.bulletSpeed = 4;
+                // ステージ4のボスの追尾弾を遅めにする
+                this.bulletSpeed = 6;
             }
-            this.shootInterval = Math.max(20, 60 - stage * 5);
+            this.shootInterval = Math.max(15, 60 - stage * 7);
+            if (stage === 6) {
+                this.bulletSpeed += 2;
+                this.shootInterval = 10;
+            }
             this.shootCooldown = this.shootInterval;
             this.pattern = config.pattern;
             this.attackPattern = config.attackPattern;
             this.color = config.color;
             this.dx = this.speed; // for bouncing pattern
+            this.img = stage === 6 ? finalBossImg : bossImg;
         } else {
-            this.width = 30;
-            this.height = 30;
-            this.speed = 2;
-            this.hp = gameState.stage + 1;
+            this.width = 40;
+            this.height = 40;
+            this.speed = 3;
+            this.hp = gameState.stage + 2;
             this.maxHp = this.hp;
             this.shootCooldown = 0;
             this.movement = movement;
@@ -432,8 +443,8 @@ class Enemy {
     draw() {
         if (this.type === 'boss') {
             // ボス敵
-            if (bossImg.loaded) {
-                ctx.drawImage(bossImg, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            if (this.img && this.img.loaded) {
+                ctx.drawImage(this.img, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
                 ctx.save();
                 ctx.globalCompositeOperation = 'source-atop';
                 ctx.globalAlpha = 0.6;
@@ -443,6 +454,11 @@ class Enemy {
             } else {
                 ctx.fillStyle = this.color;
                 ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            }
+            if (gameState.stage === 6) {
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
             }
 
             // HPバー
@@ -459,6 +475,9 @@ class Enemy {
             // 通常敵
             ctx.fillStyle = this.color;
             ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
         }
     }
 }
@@ -722,8 +741,10 @@ function spawnEnemies() {
             enemies.push(new Enemy(x, -150, 'boss'));
             gameState.bossActive = true;
             bgm.pause();
-            bossBgm.currentTime = 0;
-            bossBgm.play();
+            if (gameState.stage !== 6) {
+                bossBgm.currentTime = 0;
+                bossBgm.play();
+            }
         }
     }
 }
@@ -964,8 +985,13 @@ function nextStage() {
     gameState.bossActive = false;
     bossBgm.pause();
     bossBgm.currentTime = 0;
-    bgm.currentTime = 0;
-    bgm.play();
+    bgm.pause();
+    if (gameState.stage === 6) {
+        bossBgm.play();
+    } else {
+        bgm.currentTime = 0;
+        bgm.play();
+    }
 }
 
 // UI更新
