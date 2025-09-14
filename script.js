@@ -865,9 +865,18 @@ function checkCollisions() {
 function useBomb() {
     if (player.bombCount > 0) {
         player.bombCount--;
-        enemies.forEach(enemy => explosions.push(new Explosion(enemy.x, enemy.y)));
+        let bossDefeated = false;
+        enemies.forEach(enemy => {
+            explosions.push(new Explosion(enemy.x, enemy.y));
+            if (enemy.type === 'boss') {
+                bossDefeated = true;
+            }
+        });
         enemies = [];
         bullets = bullets.filter(b => b.dy < 0);
+        if (bossDefeated) {
+            nextStage();
+        }
         updateUI();
     }
 }
