@@ -865,16 +865,28 @@ function checkCollisions() {
 function useBomb() {
     if (player.bombCount > 0) {
         player.bombCount--;
-        let bossDefeated = false;
-        enemies.forEach(enemy => {
+        let bossKilled = false;
+        enemies = enemies.filter(enemy => {
             explosions.push(new Explosion(enemy.x, enemy.y));
             if (enemy.type === 'boss') {
-                bossDefeated = true;
+                // ボムはボスを即死させず、一定ダメージを与える
+                enemy.hp -= Math.floor(enemy.maxHp * 0.25);
+                if (enemy.hp <= 0) {
+                    bossKilled = true;
+                    gameState.score += 100;
+                    return false;
+                }
+                return true;
+            } else {
+                gameState.score += 10;
+                if (Math.random() < 0.3) {
+                    spawnPowerUp(enemy.x, enemy.y);
+                }
+                return false;
             }
         });
-        enemies = [];
         bullets = bullets.filter(b => b.dy < 0);
-        if (bossDefeated) {
+        if (bossKilled) {
             nextStage();
         }
         updateUI();
